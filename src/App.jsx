@@ -121,6 +121,17 @@ function GameView({ settings, onReturnToTitle }) {
           <div className="stat stat-lives">Lives: {lives}</div>
           <div className="stat stat-wave">Wave: {wave}</div>
         </div>
+        <button
+          className="wave-button"
+          onClick={startWave}
+          disabled={waveActive || gameOver || showMathChallenge}
+        >
+          {waveActive
+            ? `Wave ${wave}...`
+            : showMathChallenge
+              ? 'Solve math!'
+              : `Start Wave ${wave + 1}`}
+        </button>
       </div>
 
       <div className="main-area">
@@ -181,18 +192,6 @@ function GameView({ settings, onReturnToTitle }) {
           )}
 
           <div className="sell-hint">Right-click tower to sell ({Math.round(SELL_REFUND * 100)}%)</div>
-
-          <button
-            className="wave-button"
-            onClick={startWave}
-            disabled={waveActive || gameOver || showMathChallenge}
-          >
-            {waveActive
-              ? `Wave ${wave}...`
-              : showMathChallenge
-                ? 'Solve math!'
-                : `Start Wave ${wave + 1}`}
-          </button>
         </div>
       </div>
 

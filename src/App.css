@@ -182,8 +182,7 @@
 }
 
 .wave-button {
-  margin-top: auto;
-  padding: 8px;
+  padding: 6px 16px;
   border: 2px solid #5a3d1a;
   border-radius: 6px;
   background: #4a6b2a;
@@ -193,6 +192,7 @@
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .wave-button:hover {
@@ -297,10 +297,6 @@
 
   .tower-tooltip {
     display: none;
-  }
-
-  .wave-button {
-    margin-top: 4px;
   }
 }
 
