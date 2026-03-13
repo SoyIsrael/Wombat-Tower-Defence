@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { COLS, ROWS, CELL_SIZE, STARTING_GOLD, STARTING_LIVES } from '../game/constants.js';
-import { TOWER_TYPES, createTower } from '../game/towers.js';
+import { TOWER_TYPES, createTower, SELL_REFUND } from '../game/towers.js';
 import { createEnemy, getEnemyCountForWave, getSpawnInterval, getEnemyTypesForWave } from '../game/enemies.js';
 import { computePaths, wouldBlockPath, tracePathFrom } from '../game/pathfinding.js';
 import { updateEnemies, updateTowers, updateProjectiles } from '../game/gameLogic.js';
@@ -101,6 +101,9 @@ export function useGameLoop(canvasRef, settings) {
     const isWater = waterSet.has(key);
     const isWall = wallSet.has(key);
 
+    // Block placement on path tiles (the active enemy route)
+    if (s.pathSet.has(key) && !isWater) return;
+
     if (def.waterOnly) {
       if (!isWater) return; // water tower must go on water
     } else {
@@ -156,6 +159,40 @@ export function useGameLoop(canvasRef, settings) {
     setGold(s.gold);
     setShowMathChallenge(false);
   }, []);
+
+  const sellTower = useCallback((col, row) => {
+    const s = stateRef.current;
+    if (s.gameOver) return;
+    const key = `${col},${row}`;
+    const idx = s.towers.findIndex(t => t.col === col && t.row === row);
+    if (idx === -1) return;
+
+    const tower = s.towers[idx];
+    const refund = Math.floor(tower.cost * SELL_REFUND);
+    s.towers.splice(idx, 1);
+
+    if (!tower.waterOnly) {
+      s.towerBlockedSet.delete(key);
+      recomputePaths();
+      // Re-path enemies
+      if (s.prevGrid) {
+        for (const enemy of s.enemies) {
+          const enemyCell = {
+            col: Math.floor(enemy.x),
+            row: Math.floor(enemy.y),
+          };
+          const newPath = tracePathFrom(enemyCell, s.prevGrid);
+          if (newPath && newPath.length > 1) {
+            enemy.path = newPath;
+            enemy.pathIndex = 0;
+          }
+        }
+      }
+    }
+
+    s.gold += refund;
+    setGold(s.gold);
+  }, [map, mapBlockedSet, waterSet, wallSet]);
 
   const restart = useCallback(() => {
     const s = stateRef.current;
@@ -254,7 +291,10 @@ export function useGameLoop(canvasRef, settings) {
         if (hover && selectedTower) {
           canAfford = s.gold >= selectedTower.cost;
           const key = `${hover.col},${hover.row}`;
+          // Check if on path (blocked for land towers)
+          const isOnPath = s.pathSet.has(key) && !waterSet.has(key);
           if (!selectedTower.waterOnly &&
+              !isOnPath &&
               !s.towerBlockedSet.has(key) &&
               !waterSet.has(key) &&
               !wallSet.has(key) &&
@@ -262,6 +302,8 @@ export function useGameLoop(canvasRef, settings) {
               !(hover.col === map.goal.col && hover.row === map.goal.row)) {
             const fullBlocked = getFullBlockedSet();
             wouldBlockVal = wouldBlockPath(fullBlocked, hover.col, hover.row, map.spawns, map.goal);
+          } else if (isOnPath && !selectedTower.waterOnly) {
+            wouldBlockVal = true;
           }
         }
         render(ctx, {
@@ -297,7 +339,7 @@ export function useGameLoop(canvasRef, settings) {
     showMathChallenge,
     selectedTowerId, setSelectedTowerId,
     hoverCell, setHoverCell,
-    placeTower, startWave, addGold, restart,
+    placeTower, sellTower, startWave, addGold, restart,
     stateRef,
   };
 }

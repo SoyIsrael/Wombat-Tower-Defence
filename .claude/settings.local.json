@@ -3,7 +3,8 @@
     "allow": [
       "Bash(cd \"C:/Users/israe/OneDrive - Washington University in St. Louis/Documents/Projects/Personal/Wombat Tower Defence\" && npm install 2>&1)",
       "Bash(cd \"C:/Users/israe/OneDrive - Washington University in St. Louis/Documents/Projects/Personal/Wombat Tower Defence\" && npx vite build 2>&1)",
-      "Bash(cd \"C:/Users/israe/OneDrive - Washington University in St. Louis/Documents/Projects/Personal/Wombat Tower Defence\" && timeout 5 npx vite --host 2>&1 || true)"
+      "Bash(cd \"C:/Users/israe/OneDrive - Washington University in St. Louis/Documents/Projects/Personal/Wombat Tower Defence\" && timeout 5 npx vite --host 2>&1 || true)",
+      "Bash(cd \"C:\\\\Users\\\\israe\\\\OneDrive - Washington University in St. Louis\\\\Documents\\\\Projects\\\\Personal\\\\Wombat Tower Defence\" && npx vite build 2>&1)"
     ]
   }
 }

@@ -1,5 +1,9 @@
 import { CELL_SIZE, MONEY_TOWER_INTERVAL, MONEY_TOWER_AMOUNT } from './constants.js';
 
+function applyArmor(damage, armor) {
+  return Math.max(1, damage - (armor || 0));
+}
+
 export function updateEnemies(enemies, dt) {
   const reached = [];
   const alive = [];
@@ -10,7 +14,7 @@ export function updateEnemies(enemies, dt) {
 
     // Poison damage over time
     if (enemy.poisonUntil && enemy.poisonUntil > now && enemy.poisonDps) {
-      enemy.hp -= enemy.poisonDps * dt;
+      enemy.hp -= applyArmor(enemy.poisonDps * dt, (enemy.armor || 0) * dt);
       if (enemy.hp <= 0) {
         // Don't add to alive, will be cleaned up as a kill
         continue;
@@ -121,7 +125,7 @@ export function updateProjectiles(projectiles, enemies, dt) {
 
     if (move >= dist) {
       // Hit!
-      target.hp -= proj.tower.damage;
+      target.hp -= applyArmor(proj.tower.damage, target.armor);
 
       // Slow effect
       if (proj.tower.slowFactor) {
@@ -142,7 +146,7 @@ export function updateProjectiles(projectiles, enemies, dt) {
           const sdy = enemy.y - target.y;
           const sd = Math.sqrt(sdx * sdx + sdy * sdy);
           if (sd <= proj.tower.splashRadius) {
-            enemy.hp -= Math.round(proj.tower.damage * 0.6);
+            enemy.hp -= applyArmor(Math.round(proj.tower.damage * 0.6), enemy.armor);
           }
         }
       }
@@ -171,7 +175,7 @@ export function updateProjectiles(projectiles, enemies, dt) {
           }
 
           if (!nextTarget) break;
-          nextTarget.hp -= Math.round(chainDamage);
+          nextTarget.hp -= applyArmor(Math.round(chainDamage), nextTarget.armor);
           hitSet.add(nextTarget.id);
 
           // Add a visual chain arc

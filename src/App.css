@@ -66,7 +66,6 @@
   padding: 12px;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   gap: 8px;
 }
 
@@ -74,60 +73,108 @@
   font-size: 14px;
   color: #f0d9a0;
   text-align: center;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
-.tower-option {
+/* Compact tower grid */
+.tower-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.tower-cell {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 8px;
+  gap: 2px;
+  padding: 4px 2px;
   border: 2px solid #5a3d1a;
   border-radius: 6px;
   background: #2d1f0e;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.12s;
 }
 
-.tower-option:hover {
+.tower-cell:hover {
   border-color: #8b6914;
   background: #3a2a12;
 }
 
-.tower-option.selected {
+.tower-cell.selected {
   border-color: #ffd700;
   background: #4a3520;
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 0 6px rgba(255, 215, 0, 0.35);
 }
 
-.tower-option.disabled {
-  opacity: 0.4;
+.tower-cell.disabled {
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
-.tower-option .tower-icon {
-  width: 32px;
-  height: 32px;
+.tower-cell-icon {
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  margin-bottom: 4px;
+  position: relative;
 }
 
-.tower-option .tower-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: #e8d5b7;
+.tower-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
 }
 
-.tower-option .tower-cost {
-  font-size: 11px;
+.water-badge {
+  color: #44ddff;
+}
+
+.tower-cell-cost {
+  font-size: 10px;
+  font-weight: 700;
   color: #ffd700;
 }
 
-.tower-option .tower-desc {
-  font-size: 10px;
-  color: #a89070;
-  text-align: center;
+/* Hover tooltip */
+.tower-tooltip {
+  background: #2d1f0e;
+  border: 2px solid #8b6914;
+  border-radius: 6px;
+  padding: 8px 10px;
   margin-top: 2px;
+}
+
+.tt-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f0d9a0;
+}
+
+.tt-cost {
+  font-size: 11px;
+  color: #ffd700;
+  margin-bottom: 2px;
+}
+
+.tt-desc {
+  font-size: 11px;
+  color: #a89070;
+  line-height: 1.3;
+}
+
+.tt-stat {
+  font-size: 10px;
+  color: #8ecae6;
+  margin-top: 1px;
+}
+
+.sell-hint {
+  font-size: 10px;
+  color: #8a7a60;
+  text-align: center;
 }
 
 .wave-button {

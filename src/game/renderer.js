@@ -215,6 +215,9 @@ function drawTowers(ctx, towers, theme) {
       case 'poison': drawPoisonWombat(ctx, cx, cy, r, tower, now); break;
       case 'money': drawMinerWombat(ctx, cx, cy, r, tower, now); break;
       case 'water': drawWaterWombat(ctx, cx, cy, r, tower, now); break;
+      case 'laser': drawLaserWombat(ctx, cx, cy, r, tower, now); break;
+      case 'fortress': drawFortressWombat(ctx, cx, cy, r, tower, now); break;
+      case 'tesla': drawTeslaWombat(ctx, cx, cy, r, tower, now); break;
       default: drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent); break;
     }
 
@@ -462,6 +465,96 @@ function drawWaterWombat(ctx, cx, cy, r, tower, now) {
   ctx.globalAlpha = 1;
 }
 
+function drawLaserWombat(ctx, cx, cy, r, tower, now) {
+  drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent);
+  // Visor / laser goggles
+  ctx.fillStyle = '#ff3377';
+  ctx.globalAlpha = 0.7;
+  ctx.fillRect(cx - 8, cy - 5, 16, 4);
+  ctx.globalAlpha = 1;
+  // Lens flare
+  const flare = Math.sin(now / 150) * 0.4 + 0.6;
+  ctx.fillStyle = `rgba(255, 51, 119, ${flare})`;
+  ctx.beginPath();
+  ctx.arc(cx - 5, cy - 3, 2.5, 0, Math.PI * 2);
+  ctx.arc(cx + 5, cy - 3, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  // Rapid-fire lines radiating
+  ctx.strokeStyle = '#ff66aa';
+  ctx.lineWidth = 1;
+  const phase = (now / 100) % (Math.PI * 2);
+  for (let i = 0; i < 6; i++) {
+    const angle = phase + (i * Math.PI / 3);
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(angle) * (r + 1), cy + Math.sin(angle) * (r + 1));
+    ctx.lineTo(cx + Math.cos(angle) * (r + 5), cy + Math.sin(angle) * (r + 5));
+    ctx.stroke();
+  }
+}
+
+function drawFortressWombat(ctx, cx, cy, r, tower, now) {
+  // Draw a slightly bigger body for the fortress
+  drawBaseWombat(ctx, cx, cy, r * 1.1, tower.color, tower.accent);
+  // Helmet with crest
+  ctx.fillStyle = '#998855';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - r * 0.6, r * 0.9, r * 0.35, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+  // Helmet crest
+  ctx.fillStyle = '#bbaa66';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r * 1.1);
+  ctx.lineTo(cx - 3, cy - r * 0.6);
+  ctx.lineTo(cx + 3, cy - r * 0.6);
+  ctx.closePath();
+  ctx.fill();
+  // Shield emblem on body
+  ctx.strokeStyle = '#ccaa44';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - 5, cy + 1);
+  ctx.lineTo(cx, cy + 8);
+  ctx.lineTo(cx + 5, cy + 1);
+  ctx.lineTo(cx + 5, cy - 3);
+  ctx.lineTo(cx - 5, cy - 3);
+  ctx.closePath();
+  ctx.stroke();
+}
+
+function drawTeslaWombat(ctx, cx, cy, r, tower, now) {
+  drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent);
+  // Tesla coil on head
+  ctx.strokeStyle = '#88aaff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r * 0.3);
+  ctx.lineTo(cx, cy - r - 6);
+  ctx.stroke();
+  // Coil top sphere
+  ctx.fillStyle = '#6688ff';
+  ctx.beginPath();
+  ctx.arc(cx, cy - r - 6, 4, 0, Math.PI * 2);
+  ctx.fill();
+  // Electric arcs from coil
+  ctx.strokeStyle = '#aaccff';
+  ctx.lineWidth = 1;
+  const arcPhase = (now / 250) % (Math.PI * 2);
+  for (let i = 0; i < 5; i++) {
+    const angle = arcPhase + (i * Math.PI * 2 / 5);
+    const ax = cx + Math.cos(angle) * 7;
+    const ay = (cy - r - 6) + Math.sin(angle) * 7;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r - 6);
+    ctx.lineTo(ax + (Math.random() - 0.5) * 3, ay + (Math.random() - 0.5) * 3);
+    ctx.stroke();
+  }
+  // Body glow
+  ctx.fillStyle = 'rgba(100, 136, 255, 0.15)';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 function drawEnemies(ctx, enemies) {
   for (const enemy of enemies) {
     if (enemy.hp <= 0) continue;
@@ -471,7 +564,8 @@ function drawEnemies(ctx, enemies) {
     const isSlow = enemy.slowUntil > now;
     const isPoisoned = enemy.poisonUntil && enemy.poisonUntil > now;
 
-    switch (enemy.typeId) {
+    const drawType = enemy.baseType || enemy.typeId;
+    switch (drawType) {
       case 'beetle':
         drawBeetle(ctx, ex, ey, isSlow);
         break;
@@ -482,6 +576,11 @@ function drawEnemies(ctx, enemies) {
       default:
         drawAnt(ctx, ex, ey, isSlow);
         break;
+    }
+
+    // Armor overlay
+    if (enemy.armored) {
+      drawArmorOverlay(ctx, ex, ey, drawType);
     }
 
     // HP bar
@@ -496,6 +595,25 @@ function drawEnemies(ctx, enemies) {
     ctx.fillStyle = hpPct > 0.5 ? '#4a6b2a' : hpPct > 0.25 ? '#cc8822' : '#cc2222';
     ctx.fillRect(barX, barY, barW * hpPct, barH);
 
+    // Armor indicator
+    if (enemy.armored) {
+      ctx.fillStyle = '#aab0bb';
+      ctx.strokeStyle = '#667';
+      ctx.lineWidth = 1;
+      const ax = barX - 8;
+      const ay = barY - 1;
+      // Tiny shield icon
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(ax + 5, ay);
+      ctx.lineTo(ax + 5, ay + 4);
+      ctx.lineTo(ax + 2.5, ay + 6);
+      ctx.lineTo(ax, ay + 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+    }
+
     // Poison indicator
     if (isPoisoned) {
       ctx.fillStyle = 'rgba(100, 220, 50, 0.5)';
@@ -503,6 +621,74 @@ function drawEnemies(ctx, enemies) {
       ctx.arc(ex + barW / 2 + 4, barY + 2, 3, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+}
+
+function drawArmorOverlay(ctx, ex, ey, baseType) {
+  ctx.strokeStyle = '#c0c8d4';
+  ctx.lineWidth = 1.5;
+
+  if (baseType === 'ant') {
+    const r = CELL_SIZE * 0.22;
+    // Metallic plates on body segments
+    ctx.fillStyle = 'rgba(180, 190, 210, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(ex, ey + 4, r * 0.9, r * 0.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Head plate
+    ctx.beginPath();
+    ctx.arc(ex, ey - 4, r * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Rivet dots
+    ctx.fillStyle = '#dde';
+    ctx.beginPath();
+    ctx.arc(ex - 4, ey + 4, 1.2, 0, Math.PI * 2);
+    ctx.arc(ex + 4, ey + 4, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (baseType === 'beetle') {
+    const r = CELL_SIZE * 0.3;
+    // Heavy shell plating
+    ctx.fillStyle = 'rgba(180, 190, 210, 0.4)';
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, r * 0.85, r * 0.95, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Cross brace
+    ctx.strokeStyle = '#99a';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ex, ey - r * 0.7);
+    ctx.lineTo(ex, ey + r * 0.7);
+    ctx.moveTo(ex - r * 0.6, ey);
+    ctx.lineTo(ex + r * 0.6, ey);
+    ctx.stroke();
+    // Corner rivets
+    ctx.fillStyle = '#dde';
+    for (const [dx, dy] of [[-1,-1],[1,-1],[-1,1],[1,1]]) {
+      ctx.beginPath();
+      ctx.arc(ex + dx * r * 0.5, ey + dy * r * 0.5, 1.3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (baseType === 'spider') {
+    const r = CELL_SIZE * 0.2;
+    // Head plate
+    ctx.fillStyle = 'rgba(180, 190, 210, 0.45)';
+    ctx.beginPath();
+    ctx.arc(ex, ey, r * 0.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Abdomen plate
+    ctx.beginPath();
+    ctx.ellipse(ex, ey + r * 1.2, r * 0.95, r * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Rivets
+    ctx.fillStyle = '#dde';
+    ctx.beginPath();
+    ctx.arc(ex, ey + r * 1.2, 1.2, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 

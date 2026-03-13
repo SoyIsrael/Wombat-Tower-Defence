@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState } from 'react';
 import { COLS, ROWS, CELL_SIZE } from './game/constants.js';
-import { TOWER_TYPES } from './game/towers.js';
+import { TOWER_TYPES, SELL_REFUND } from './game/towers.js';
 import { MAPS } from './game/maps.js';
 import { useGameLoop } from './hooks/useGameLoop.js';
 import MathChallenge from './components/MathChallenge.jsx';
@@ -10,7 +10,11 @@ import './App.css';
 const CANVAS_WIDTH = COLS * CELL_SIZE;
 const CANVAS_HEIGHT = ROWS * CELL_SIZE;
 
-const TOWER_LIST = ['shooter', 'slow', 'splash', 'sniper', 'chain', 'poison', 'money', 'water'];
+const TOWER_LIST = [
+  'shooter', 'slow', 'splash', 'poison', 'chain', 'sniper',
+  'money', 'water',
+  'laser', 'fortress', 'tesla',
+];
 
 const DEFAULT_SETTINGS = {
   timerDuration: 60,
@@ -62,13 +66,14 @@ function GameView({ settings, onReturnToTitle }) {
   const canvasRef = useRef(null);
   const map = MAPS[settings.mapId] || MAPS.classic;
   const hasWater = map.water.length > 0;
+  const [hoveredTower, setHoveredTower] = useState(null);
 
   const {
     gold, lives, wave, waveActive, gameOver,
     showMathChallenge,
     selectedTowerId, setSelectedTowerId,
     setHoverCell,
-    placeTower, startWave, addGold, restart,
+    placeTower, sellTower, startWave, addGold, restart,
   } = useGameLoop(canvasRef, settings);
 
   const getCellFromEvent = useCallback((e) => {
@@ -88,6 +93,12 @@ function GameView({ settings, onReturnToTitle }) {
     if (cell) placeTower(cell.col, cell.row);
   }, [getCellFromEvent, placeTower]);
 
+  const handleCanvasRightClick = useCallback((e) => {
+    e.preventDefault();
+    const cell = getCellFromEvent(e);
+    if (cell) sellTower(cell.col, cell.row);
+  }, [getCellFromEvent, sellTower]);
+
   const handleCanvasMouseMove = useCallback((e) => {
     const cell = getCellFromEvent(e);
     setHoverCell(cell);
@@ -97,7 +108,6 @@ function GameView({ settings, onReturnToTitle }) {
     setHoverCell(null);
   }, [setHoverCell]);
 
-  // Filter tower list: only show water tower if map has water
   const visibleTowers = TOWER_LIST.filter(id =>
     id !== 'water' || hasWater
   );
@@ -126,6 +136,7 @@ function GameView({ settings, onReturnToTitle }) {
               aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT}`,
             }}
             onClick={handleCanvasClick}
+            onContextMenu={handleCanvasRightClick}
             onMouseMove={handleCanvasMouseMove}
             onMouseLeave={handleCanvasMouseLeave}
           />
@@ -133,25 +144,43 @@ function GameView({ settings, onReturnToTitle }) {
 
         <div className="side-panel">
           <h2>Towers</h2>
-          {visibleTowers.map((id) => {
-            const def = TOWER_TYPES[id];
-            const canAfford = gold >= def.cost;
-            return (
-              <div
-                key={id}
-                className={`tower-option ${selectedTowerId === id ? 'selected' : ''} ${!canAfford ? 'disabled' : ''}`}
-                onClick={() => canAfford && setSelectedTowerId(selectedTowerId === id ? null : id)}
-              >
+          <div className="tower-grid">
+            {visibleTowers.map((id) => {
+              const def = TOWER_TYPES[id];
+              const canAfford = gold >= def.cost;
+              return (
                 <div
-                  className="tower-icon"
-                  style={{ background: def.color }}
-                />
-                <span className="tower-name">{def.name}</span>
-                <span className="tower-cost">{def.cost}g</span>
-                <span className="tower-desc">{def.desc}</span>
-              </div>
-            );
-          })}
+                  key={id}
+                  className={`tower-cell ${selectedTowerId === id ? 'selected' : ''} ${!canAfford ? 'disabled' : ''}`}
+                  onClick={() => canAfford && setSelectedTowerId(selectedTowerId === id ? null : id)}
+                  onMouseEnter={() => setHoveredTower(id)}
+                  onMouseLeave={() => setHoveredTower(null)}
+                >
+                  <div className="tower-cell-icon" style={{ background: def.color }}>
+                    {def.waterOnly && <span className="tower-badge water-badge">~</span>}
+                  </div>
+                  <span className="tower-cell-cost">{def.cost}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Hover tooltip */}
+          {hoveredTower && (
+            <div className="tower-tooltip">
+              <div className="tt-name">{TOWER_TYPES[hoveredTower].name}</div>
+              <div className="tt-cost">{TOWER_TYPES[hoveredTower].cost}g</div>
+              <div className="tt-desc">{TOWER_TYPES[hoveredTower].desc}</div>
+              {TOWER_TYPES[hoveredTower].range > 0 && (
+                <div className="tt-stat">Range: {TOWER_TYPES[hoveredTower].range}</div>
+              )}
+              {TOWER_TYPES[hoveredTower].damage > 0 && (
+                <div className="tt-stat">Dmg: {TOWER_TYPES[hoveredTower].damage}</div>
+              )}
+            </div>
+          )}
+
+          <div className="sell-hint">Right-click tower to sell ({Math.round(SELL_REFUND * 100)}%)</div>
 
           <button
             className="wave-button"
@@ -159,9 +188,9 @@ function GameView({ settings, onReturnToTitle }) {
             disabled={waveActive || gameOver || showMathChallenge}
           >
             {waveActive
-              ? `Wave ${wave} in progress...`
+              ? `Wave ${wave}...`
               : showMathChallenge
-                ? 'Complete math first!'
+                ? 'Solve math!'
                 : `Start Wave ${wave + 1}`}
           </button>
         </div>
