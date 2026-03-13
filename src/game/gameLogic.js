@@ -3,11 +3,20 @@ import { CELL_SIZE, MONEY_TOWER_INTERVAL, MONEY_TOWER_AMOUNT } from './constants
 export function updateEnemies(enemies, dt) {
   const reached = [];
   const alive = [];
+  const now = performance.now();
 
   for (const enemy of enemies) {
     if (enemy.hp <= 0) continue;
 
-    const now = performance.now();
+    // Poison damage over time
+    if (enemy.poisonUntil && enemy.poisonUntil > now && enemy.poisonDps) {
+      enemy.hp -= enemy.poisonDps * dt;
+      if (enemy.hp <= 0) {
+        // Don't add to alive, will be cleaned up as a kill
+        continue;
+      }
+    }
+
     let speed = enemy.baseSpeed;
     if (enemy.slowUntil > now) {
       speed *= 0.4;
@@ -119,6 +128,12 @@ export function updateProjectiles(projectiles, enemies, dt) {
         target.slowUntil = performance.now() + (proj.tower.slowDuration || 2000);
       }
 
+      // Poison effect
+      if (proj.tower.poisonDps) {
+        target.poisonUntil = performance.now() + (proj.tower.poisonDuration || 3000);
+        target.poisonDps = proj.tower.poisonDps;
+      }
+
       // Splash damage
       if (proj.tower.splashRadius) {
         for (const enemy of enemies) {
@@ -132,6 +147,49 @@ export function updateProjectiles(projectiles, enemies, dt) {
         }
       }
 
+      // Chain lightning
+      if (proj.tower.chainCount) {
+        let chainSource = target;
+        let chainDamage = proj.tower.damage;
+        const hitSet = new Set([target.id]);
+
+        for (let i = 0; i < proj.tower.chainCount; i++) {
+          chainDamage *= (proj.tower.chainDecay || 0.7);
+          let nextTarget = null;
+          let nextDist = Infinity;
+          const chainRange = proj.tower.chainRange || 2;
+
+          for (const enemy of enemies) {
+            if (enemy.hp <= 0 || hitSet.has(enemy.id)) continue;
+            const cdx = enemy.x - chainSource.x;
+            const cdy = enemy.y - chainSource.y;
+            const cd = Math.sqrt(cdx * cdx + cdy * cdy);
+            if (cd <= chainRange && cd < nextDist) {
+              nextTarget = enemy;
+              nextDist = cd;
+            }
+          }
+
+          if (!nextTarget) break;
+          nextTarget.hp -= Math.round(chainDamage);
+          hitSet.add(nextTarget.id);
+
+          // Add a visual chain arc
+          projectiles.push({
+            x: chainSource.x * CELL_SIZE,
+            y: chainSource.y * CELL_SIZE,
+            targetId: nextTarget.id,
+            tower: { ...proj.tower, chainCount: 0, damage: 0 }, // visual only, no re-chain
+            speed: 20,
+            color: proj.tower.accent || '#cc88ff',
+            isChainArc: true,
+          });
+
+          if (nextTarget.hp <= 0) kills.push(nextTarget);
+          chainSource = nextTarget;
+        }
+      }
+
       if (target.hp <= 0) {
         kills.push(target);
       }
@@ -142,5 +200,5 @@ export function updateProjectiles(projectiles, enemies, dt) {
     }
   }
 
-  return { alive: alive, kills };
+  return { alive, kills };
 }

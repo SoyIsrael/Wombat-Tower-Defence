@@ -193,34 +193,30 @@ function drawSpawnsAndGoal(ctx, spawns, goal) {
 }
 
 function drawTowers(ctx, towers, theme) {
+  const now = performance.now();
   for (const tower of towers) {
     const cx = (tower.col + 0.5) * CELL_SIZE;
     const cy = (tower.row + 0.5) * CELL_SIZE;
+    const x = tower.col * CELL_SIZE;
+    const y = tower.row * CELL_SIZE;
+    const r = CELL_SIZE * 0.35;
 
-    // Base — water towers get a different base
-    if (tower.waterOnly) {
-      ctx.fillStyle = theme.waterLight;
-    } else {
-      ctx.fillStyle = theme.towerBase;
+    // Base tile
+    ctx.fillStyle = tower.waterOnly ? theme.waterLight : theme.towerBase;
+    ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+
+    // Dispatch per tower type for unique visuals
+    switch (tower.typeId) {
+      case 'shooter': drawShooterWombat(ctx, cx, cy, r, tower, now); break;
+      case 'slow': drawFreezerWombat(ctx, cx, cy, r, tower, now); break;
+      case 'splash': drawSplashWombat(ctx, cx, cy, r, tower, now); break;
+      case 'sniper': drawSniperWombat(ctx, cx, cy, r, tower, now); break;
+      case 'chain': drawChainWombat(ctx, cx, cy, r, tower, now); break;
+      case 'poison': drawPoisonWombat(ctx, cx, cy, r, tower, now); break;
+      case 'money': drawMinerWombat(ctx, cx, cy, r, tower, now); break;
+      case 'water': drawWaterWombat(ctx, cx, cy, r, tower, now); break;
+      default: drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent); break;
     }
-    ctx.fillRect(tower.col * CELL_SIZE, tower.row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-
-    // Tower body
-    ctx.fillStyle = tower.color;
-    ctx.beginPath();
-    ctx.arc(cx, cy, CELL_SIZE * 0.35, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Wombat face
-    ctx.fillStyle = '#2d1f0e';
-    ctx.beginPath();
-    ctx.arc(cx - 5, cy - 3, 3, 0, Math.PI * 2);
-    ctx.arc(cx + 5, cy - 3, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#4a3020';
-    ctx.beginPath();
-    ctx.ellipse(cx, cy + 3, 4, 2.5, 0, 0, Math.PI * 2);
-    ctx.fill();
 
     if (tower.showRange && tower.range > 0) {
       ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
@@ -232,12 +228,248 @@ function drawTowers(ctx, towers, theme) {
   }
 }
 
+// --- Shared wombat base ---
+function drawBaseWombat(ctx, cx, cy, r, color, accent) {
+  // Body
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  // Ears
+  ctx.fillStyle = accent || color;
+  ctx.beginPath();
+  ctx.ellipse(cx - r * 0.6, cy - r * 0.75, r * 0.3, r * 0.45, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + r * 0.6, cy - r * 0.75, r * 0.3, r * 0.45, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(cx - 5, cy - 2, 3.5, 0, Math.PI * 2);
+  ctx.arc(cx + 5, cy - 2, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath();
+  ctx.arc(cx - 4, cy - 2, 2, 0, Math.PI * 2);
+  ctx.arc(cx + 4, cy - 2, 2, 0, Math.PI * 2);
+  ctx.fill();
+  // Nose
+  ctx.fillStyle = '#4a3020';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 5, 4, 2.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// --- Per-tower-type wombats ---
+
+function drawShooterWombat(ctx, cx, cy, r, tower, now) {
+  drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent);
+  // Crosshair on forehead
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 1.5;
+  const hx = cx, hy = cy - r * 0.55;
+  ctx.beginPath();
+  ctx.arc(hx, hy, 4, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(hx - 6, hy); ctx.lineTo(hx + 6, hy);
+  ctx.moveTo(hx, hy - 6); ctx.lineTo(hx, hy + 6);
+  ctx.stroke();
+}
+
+function drawFreezerWombat(ctx, cx, cy, r, tower, now) {
+  drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent);
+  // Snowflake sparkles around
+  ctx.fillStyle = '#ccedff';
+  const sparklePhase = (now / 600) % (Math.PI * 2);
+  for (let i = 0; i < 4; i++) {
+    const angle = sparklePhase + (i * Math.PI / 2);
+    const sx = cx + Math.cos(angle) * (r + 4);
+    const sy = cy + Math.sin(angle) * (r + 4);
+    ctx.beginPath();
+    ctx.arc(sx, sy, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // Ice crystal on forehead
+  ctx.strokeStyle = '#88ccff';
+  ctx.lineWidth = 1.5;
+  const ix = cx, iy = cy - r * 0.5;
+  ctx.beginPath();
+  ctx.moveTo(ix, iy - 5); ctx.lineTo(ix, iy + 5);
+  ctx.moveTo(ix - 4, iy - 2.5); ctx.lineTo(ix + 4, iy + 2.5);
+  ctx.moveTo(ix - 4, iy + 2.5); ctx.lineTo(ix + 4, iy - 2.5);
+  ctx.stroke();
+}
+
+function drawSplashWombat(ctx, cx, cy, r, tower, now) {
+  drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent);
+  // Explosion star on forehead
+  ctx.fillStyle = '#ff8844';
+  const sx = cx, sy = cy - r * 0.45;
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) {
+    const angle = (i / 8) * Math.PI * 2 - Math.PI / 2;
+    const pr = i % 2 === 0 ? 6 : 3;
+    const px = sx + Math.cos(angle) * pr;
+    const py = sy + Math.sin(angle) * pr;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  // Angry brows
+  ctx.strokeStyle = '#661100';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx - 8, cy - 6); ctx.lineTo(cx - 3, cy - 4);
+  ctx.moveTo(cx + 8, cy - 6); ctx.lineTo(cx + 3, cy - 4);
+  ctx.stroke();
+}
+
+function drawSniperWombat(ctx, cx, cy, r, tower, now) {
+  drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent);
+  // Scope / monocle on one eye
+  ctx.strokeStyle = '#aabbcc';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx + 5, cy - 2, 5.5, 0, Math.PI * 2);
+  ctx.stroke();
+  // Scope arm
+  ctx.beginPath();
+  ctx.moveTo(cx + 10, cy - 2);
+  ctx.lineTo(cx + r + 2, cy - 2);
+  ctx.stroke();
+  // Hat/beret
+  ctx.fillStyle = '#445566';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - r * 0.7, r * 0.8, r * 0.3, -0.15, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawChainWombat(ctx, cx, cy, r, tower, now) {
+  drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent);
+  // Lightning bolt on forehead
+  ctx.fillStyle = '#ffdd00';
+  const bx = cx, by = cy - r * 0.5;
+  ctx.beginPath();
+  ctx.moveTo(bx - 2, by - 6);
+  ctx.lineTo(bx + 3, by - 1);
+  ctx.lineTo(bx, by - 1);
+  ctx.lineTo(bx + 2, by + 6);
+  ctx.lineTo(bx - 3, by + 1);
+  ctx.lineTo(bx, by + 1);
+  ctx.closePath();
+  ctx.fill();
+  // Electric sparks
+  ctx.strokeStyle = '#cc88ff';
+  ctx.lineWidth = 1;
+  const sparkPhase = (now / 400) % (Math.PI * 2);
+  for (let i = 0; i < 3; i++) {
+    const angle = sparkPhase + (i * Math.PI * 2 / 3);
+    const sx1 = cx + Math.cos(angle) * r;
+    const sy1 = cy + Math.sin(angle) * r;
+    const sx2 = cx + Math.cos(angle) * (r + 6);
+    const sy2 = cy + Math.sin(angle) * (r + 6);
+    ctx.beginPath();
+    ctx.moveTo(sx1, sy1);
+    ctx.lineTo((sx1 + sx2) / 2 + 3, (sy1 + sy2) / 2);
+    ctx.lineTo(sx2, sy2);
+    ctx.stroke();
+  }
+}
+
+function drawPoisonWombat(ctx, cx, cy, r, tower, now) {
+  drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent);
+  // Skull/crossbones on forehead
+  ctx.fillStyle = '#ddff88';
+  const sx = cx, sy = cy - r * 0.5;
+  ctx.beginPath();
+  ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#2a5510';
+  ctx.beginPath();
+  ctx.arc(sx - 1.5, sy - 1, 1, 0, Math.PI * 2);
+  ctx.arc(sx + 1.5, sy - 1, 1, 0, Math.PI * 2);
+  ctx.fill();
+  // Drip bubbles
+  ctx.fillStyle = 'rgba(136, 221, 68, 0.6)';
+  const dripPhase = (now / 800) % 1;
+  ctx.beginPath();
+  ctx.arc(cx - 6, cy + r + 2 + dripPhase * 6, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + 5, cy + r + 4 + ((dripPhase + 0.5) % 1) * 6, 2, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawMinerWombat(ctx, cx, cy, r, tower, now) {
+  drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent);
+  // Hard hat
+  ctx.fillStyle = '#ffcc00';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - r * 0.55, r * 0.75, r * 0.25, 0, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ee9900';
+  ctx.fillRect(cx - r * 0.85, cy - r * 0.55, r * 1.7, 3);
+  // Pickaxe
+  ctx.strokeStyle = '#8B6914';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx + r * 0.3, cy + r * 0.8);
+  ctx.lineTo(cx + r + 4, cy - r * 0.2);
+  ctx.stroke();
+  ctx.strokeStyle = '#888';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(cx + r + 4, cy - r * 0.2);
+  ctx.lineTo(cx + r + 8, cy - r * 0.5);
+  ctx.stroke();
+  // Gold sparkle
+  ctx.fillStyle = '#ffd700';
+  const sparkle = Math.sin(now / 500) * 0.5 + 0.5;
+  ctx.globalAlpha = sparkle;
+  ctx.beginPath();
+  ctx.arc(cx - r * 0.5, cy + r * 0.5, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function drawWaterWombat(ctx, cx, cy, r, tower, now) {
+  drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent);
+  // Snorkel
+  ctx.strokeStyle = '#ff6644';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(cx + r * 0.3, cy + 2);
+  ctx.lineTo(cx + r + 2, cy + 2);
+  ctx.lineTo(cx + r + 2, cy - r - 2);
+  ctx.stroke();
+  // Snorkel tip
+  ctx.fillStyle = '#ff6644';
+  ctx.beginPath();
+  ctx.arc(cx + r + 2, cy - r - 2, 3, 0, Math.PI * 2);
+  ctx.fill();
+  // Water ripples
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1;
+  const ripplePhase = (now / 1000) % 1;
+  const rippleR = r * 0.8 + ripplePhase * r * 0.6;
+  ctx.globalAlpha = 1 - ripplePhase;
+  ctx.beginPath();
+  ctx.arc(cx, cy + r * 0.3, rippleR, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
 function drawEnemies(ctx, enemies) {
   for (const enemy of enemies) {
     if (enemy.hp <= 0) continue;
     const ex = enemy.x * CELL_SIZE;
     const ey = enemy.y * CELL_SIZE;
-    const isSlow = enemy.slowUntil > performance.now();
+    const now = performance.now();
+    const isSlow = enemy.slowUntil > now;
+    const isPoisoned = enemy.poisonUntil && enemy.poisonUntil > now;
 
     switch (enemy.typeId) {
       case 'beetle':
@@ -263,6 +495,14 @@ function drawEnemies(ctx, enemies) {
     ctx.fillRect(barX, barY, barW, barH);
     ctx.fillStyle = hpPct > 0.5 ? '#4a6b2a' : hpPct > 0.25 ? '#cc8822' : '#cc2222';
     ctx.fillRect(barX, barY, barW * hpPct, barH);
+
+    // Poison indicator
+    if (isPoisoned) {
+      ctx.fillStyle = 'rgba(100, 220, 50, 0.5)';
+      ctx.beginPath();
+      ctx.arc(ex + barW / 2 + 4, barY + 2, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 
@@ -402,10 +642,61 @@ function drawSpider(ctx, ex, ey, isSlow) {
 
 function drawProjectiles(ctx, projectiles) {
   for (const proj of projectiles) {
-    ctx.fillStyle = proj.color;
-    ctx.beginPath();
-    ctx.arc(proj.x, proj.y, 4, 0, Math.PI * 2);
-    ctx.fill();
+    if (proj.isChainArc) {
+      // Chain lightning arc — draw as a flickering line
+      ctx.strokeStyle = proj.color;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(proj.x, proj.y);
+      // Jagged midpoint
+      const mx = (proj.x + proj.x) / 2 + (Math.random() - 0.5) * 8;
+      const my = (proj.y + proj.y) / 2 + (Math.random() - 0.5) * 8;
+      ctx.lineTo(mx, my);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      continue;
+    }
+
+    // Glow effect for special projectiles
+    if (proj.tower.typeId === 'sniper') {
+      // Sniper tracer — elongated
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(proj.x, proj.y, 6, 2, Math.atan2(proj.y, proj.x), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, 8, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (proj.tower.typeId === 'poison') {
+      // Poison glob
+      ctx.fillStyle = proj.color;
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      // Trail drip
+      ctx.fillStyle = 'rgba(136, 221, 68, 0.3)';
+      ctx.beginPath();
+      ctx.arc(proj.x - 3, proj.y + 2, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (proj.tower.typeId === 'chain') {
+      // Electric orb
+      ctx.fillStyle = '#ffdd00';
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(204, 136, 255, 0.4)';
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Default projectile
+      ctx.fillStyle = proj.color;
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 

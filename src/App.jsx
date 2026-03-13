@@ -10,7 +10,7 @@ import './App.css';
 const CANVAS_WIDTH = COLS * CELL_SIZE;
 const CANVAS_HEIGHT = ROWS * CELL_SIZE;
 
-const TOWER_LIST = ['shooter', 'slow', 'splash', 'money', 'water'];
+const TOWER_LIST = ['shooter', 'slow', 'splash', 'sniper', 'chain', 'poison', 'money', 'water'];
 
 const DEFAULT_SETTINGS = {
   timerDuration: 60,
