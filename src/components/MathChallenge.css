@@ -1,0 +1,265 @@
+.math-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+}
+
+.math-box {
+  background: #3d2b14;
+  border: 3px solid #8b6914;
+  border-radius: 12px;
+  padding: 28px 36px;
+  text-align: center;
+  min-width: 400px;
+  max-width: 500px;
+}
+
+.math-header {
+  margin-bottom: 20px;
+}
+
+.math-header h2 {
+  font-size: 24px;
+  color: #f0d9a0;
+  margin-bottom: 6px;
+}
+
+.math-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 2px;
+}
+
+.math-progress {
+  font-size: 14px;
+  color: #a89070;
+}
+
+.math-timer {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e8d5b7;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 10px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.math-timer.warning {
+  color: #ffcc00;
+  background: rgba(255, 204, 0, 0.1);
+}
+
+.math-timer.urgent {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.15);
+  animation: timer-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes timer-pulse {
+  from { opacity: 1; }
+  to { opacity: 0.6; }
+}
+
+.math-reward {
+  display: block;
+  font-size: 13px;
+  color: #ffd700;
+}
+
+.math-problem {
+  margin: 20px 0;
+}
+
+.fraction-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 20px;
+}
+
+.fraction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 36px;
+}
+
+.frac-num,
+.frac-den {
+  font-size: 24px;
+  font-weight: 700;
+  color: #e8d5b7;
+  padding: 2px 6px;
+}
+
+.frac-line {
+  width: 100%;
+  height: 2px;
+  background: #e8d5b7;
+  margin: 2px 0;
+}
+
+.math-op {
+  font-size: 26px;
+  font-weight: 700;
+  color: #f0d9a0;
+}
+
+.math-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.answer-fraction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.frac-input {
+  width: 80px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  padding: 6px;
+  border: 2px solid #5a3d1a;
+  border-radius: 6px;
+  background: #2d1f0e;
+  color: #e8d5b7;
+  outline: none;
+}
+
+.frac-input:focus {
+  border-color: #ffd700;
+}
+
+.frac-input::placeholder {
+  color: #6b5a45;
+  font-weight: 400;
+  font-size: 14px;
+}
+
+/* Hide number input spinners */
+.frac-input::-webkit-inner-spin-button,
+.frac-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.frac-input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.frac-bar {
+  width: 80px;
+  height: 3px;
+  background: #e8d5b7;
+}
+
+.math-btn {
+  padding: 10px 32px;
+  border: 2px solid #8b6914;
+  border-radius: 6px;
+  background: #4a6b2a;
+  color: #e8d5b7;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.math-btn:hover {
+  background: #5a7b3a;
+}
+
+.math-btn:disabled {
+  background: #3a3a2a;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.math-feedback {
+  margin-top: 14px;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 6px;
+}
+
+.math-feedback.correct {
+  color: #4aff4a;
+  background: rgba(74, 255, 74, 0.1);
+}
+
+.math-feedback.wrong {
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.math-score {
+  font-size: 28px;
+  font-weight: 700;
+  color: #e8d5b7;
+  margin: 12px 0 8px;
+}
+
+.math-correct {
+  color: #4aff4a;
+}
+
+.math-earned {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffd700;
+  margin-bottom: 16px;
+}
+
+.math-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.math-result-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  color: #e8d5b7;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.math-result-row.right {
+  background: rgba(74, 255, 74, 0.08);
+}
+
+.math-result-row.wrong-row {
+  background: rgba(255, 107, 107, 0.08);
+}
+
+.math-result-icon {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.right .math-result-icon {
+  color: #4aff4a;
+}
+
+.wrong-row .math-result-icon {
+  color: #ff6b6b;
+}
