@@ -957,3 +957,29 @@ function drawHoverCell(ctx, state) {
     ctx.stroke();
   }
 }
+
+// --- Tower preview for shop icons ---
+export function drawTowerPreview(ctx, typeId, towerDef, size) {
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = size * 0.35;
+  const now = performance.now();
+  const tower = { ...towerDef, typeId };
+
+  ctx.clearRect(0, 0, size, size);
+
+  switch (typeId) {
+    case 'shooter': drawShooterWombat(ctx, cx, cy, r, tower, now); break;
+    case 'slow': drawFreezerWombat(ctx, cx, cy, r, tower, now); break;
+    case 'splash': drawSplashWombat(ctx, cx, cy, r, tower, now); break;
+    case 'sniper': drawSniperWombat(ctx, cx, cy, r, tower, now); break;
+    case 'chain': drawChainWombat(ctx, cx, cy, r, tower, now); break;
+    case 'poison': drawPoisonWombat(ctx, cx, cy, r, tower, now); break;
+    case 'money': drawMinerWombat(ctx, cx, cy, r, tower, now); break;
+    case 'water': drawWaterWombat(ctx, cx, cy, r, tower, now); break;
+    case 'laser': drawLaserWombat(ctx, cx, cy, r, tower, now); break;
+    case 'fortress': drawFortressWombat(ctx, cx, cy, r, tower, now); break;
+    case 'tesla': drawTeslaWombat(ctx, cx, cy, r, tower, now); break;
+    default: drawBaseWombat(ctx, cx, cy, r, towerDef.color, towerDef.accent); break;
+  }
+}

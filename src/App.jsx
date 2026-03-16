@@ -1,8 +1,9 @@
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import { COLS, ROWS, CELL_SIZE } from "./game/constants.js";
 import { TOWER_TYPES, SELL_REFUND } from "./game/towers.js";
 import { MAPS } from "./game/maps.js";
 import { useGameLoop } from "./hooks/useGameLoop.js";
+import { drawTowerPreview } from "./game/renderer.js";
 import MathChallenge from "./components/MathChallenge.jsx";
 import TitleScreen from "./components/TitleScreen.jsx";
 
@@ -182,52 +183,48 @@ function GameView({ settings, onReturnToTitle }) {
         </div>
 
         {/* Side panel */}
-        <div className="w-[180px] shrink-0 bg-brown-medium border-l-2 border-brown-border p-2 flex flex-col gap-1.5 max-md:w-full max-md:border-l-0 max-md:border-t-2 max-md:px-3 max-md:py-2">
-          <h2 className="text-[13px] font-bold text-gold-text text-center mb-0.5">
+        <div className="w-[210px] shrink-0 bg-brown-medium border-l-2 border-brown-border p-2 flex flex-col gap-1.5 max-md:w-full max-md:border-l-0 max-md:border-t-2 max-md:px-3 max-md:py-2">
+          <h2 className="text-[13px] font-bold text-gold-text text-center shrink-0">
             Towers
           </h2>
-          <div className="grid grid-cols-4 gap-1 max-md:grid-cols-6 max-[480px]:grid-cols-4">
-            {visibleTowers.map((id) => {
-              const def = TOWER_TYPES[id];
-              const canAfford = gold >= def.cost;
-              const isSelected = selectedTowerId === id;
-              return (
-                <div
-                  key={id}
-                  className={`flex flex-col items-center gap-0.5 py-[3px] px-[2px] border-2 rounded-md cursor-pointer transition-all duration-[120ms]
-                    ${
-                      isSelected
-                        ? "border-gold bg-selected shadow-[0_0_6px_rgba(255,215,0,0.35)]"
-                        : "border-brown-border bg-brown-dark hover:border-gold-border hover:bg-hover"
-                    }
-                    ${!canAfford ? "opacity-35 !cursor-not-allowed" : ""}`}
-                  onClick={() =>
-                    canAfford && setSelectedTowerId(isSelected ? null : id)
-                  }
-                  onMouseEnter={() => setHoveredTower(id)}
-                  onMouseLeave={() => setHoveredTower(null)}
-                >
+          <div className="overflow-y-auto min-h-0 flex-1 max-md:overflow-x-auto max-md:overflow-y-hidden">
+            <div className="grid grid-cols-2 gap-1 max-md:grid-cols-4 max-[480px]:grid-cols-3">
+              {visibleTowers.map((id) => {
+                const def = TOWER_TYPES[id];
+                const canAfford = gold >= def.cost;
+                const isSelected = selectedTowerId === id;
+                return (
                   <div
-                    className="w-6 h-6 rounded-full relative"
-                    style={{ background: def.color }}
+                    key={id}
+                    className={`flex flex-col items-center gap-0.5 py-1 px-1 border-2 rounded-md cursor-pointer transition-all duration-[120ms]
+                      ${
+                        isSelected
+                          ? "border-gold bg-selected shadow-[0_0_6px_rgba(255,215,0,0.35)]"
+                          : "border-brown-border bg-brown-dark hover:border-gold-border hover:bg-hover"
+                      }
+                      ${!canAfford ? "opacity-35 !cursor-not-allowed" : ""}`}
+                    onClick={() =>
+                      canAfford && setSelectedTowerId(isSelected ? null : id)
+                    }
+                    onMouseEnter={() => setHoveredTower(id)}
+                    onMouseLeave={() => setHoveredTower(null)}
                   >
-                    {def.waterOnly && (
-                      <span className="absolute -bottom-0.5 -right-1 text-[10px] font-bold leading-none text-water">
-                        ~
-                      </span>
-                    )}
+                    <TowerIcon typeId={id} />
+                    <span className="text-[10px] font-semibold text-gold-text leading-tight">
+                      {def.name}
+                    </span>
+                    <span className="text-[9px] font-bold text-gold">
+                      {def.cost}g
+                    </span>
                   </div>
-                  <span className="text-[9px] font-bold text-gold">
-                    {def.cost}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
 
           {/* Hover tooltip */}
           {hoveredTower && (
-            <div className="bg-brown-dark border-2 border-gold-border rounded-md py-1.5 px-2 mt-0.5 max-md:hidden">
+            <div className="bg-brown-dark border-2 border-gold-border rounded-md py-1.5 px-2 mt-0.5 shrink-0 max-md:hidden">
               <div className="text-xs font-bold text-gold-text">
                 {TOWER_TYPES[hoveredTower].name}
               </div>
@@ -250,7 +247,7 @@ function GameView({ settings, onReturnToTitle }) {
             </div>
           )}
 
-          <div className="text-[9px] text-text-hint text-center">
+          <div className="text-[9px] text-text-hint text-center shrink-0">
             Right-click tower to sell ({Math.round(SELL_REFUND * 100)}%)
           </div>
         </div>
@@ -285,6 +282,30 @@ function GameView({ settings, onReturnToTitle }) {
         </div>
       )}
     </div>
+  );
+}
+
+const ICON_SIZE = 48;
+
+function TowerIcon({ typeId }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const def = TOWER_TYPES[typeId];
+    if (!def) return;
+    drawTowerPreview(ctx, typeId, def, ICON_SIZE);
+  }, [typeId]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={ICON_SIZE}
+      height={ICON_SIZE}
+      className="w-9 h-9"
+    />
   );
 }
 
