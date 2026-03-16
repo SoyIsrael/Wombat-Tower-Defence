@@ -1,12 +1,39 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@import "tailwindcss";
+
+@theme {
+  --color-brown-dark: #2d1f0e;
+  --color-brown-medium: #3d2b14;
+  --color-brown-border: #5a3d1a;
+  --color-gold-border: #8b6914;
+  --color-gold: #ffd700;
+  --color-gold-text: #f0d9a0;
+  --color-text: #e8d5b7;
+  --color-text-muted: #a89070;
+  --color-text-hint: #8a7a60;
+  --color-text-placeholder: #6b5a45;
+  --color-red: #ff6b6b;
+  --color-blue: #8ecae6;
+  --color-green-btn: #4a6b2a;
+  --color-green-btn-hover: #5a7b3a;
+  --color-selected: #4a3520;
+  --color-hover: #3a2a12;
+  --color-disabled-bg: #3a3a2a;
+  --color-green-bright: #4aff4a;
+  --color-water: #44ddff;
+  --color-wombat: #A0784C;
+  --color-wombat-nose: #6B4226;
+
+  --animate-timer-pulse: timer-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes timer-pulse {
+  from { opacity: 1; }
+  to { opacity: 0.6; }
 }
 
 body {
-  background: #2d1f0e;
-  color: #e8d5b7;
+  background: var(--color-brown-dark);
+  color: var(--color-text);
   font-family: 'Segoe UI', system-ui, sans-serif;
   overflow: hidden;
   height: 100vh;
@@ -16,4 +43,14 @@ body {
   display: flex;
   height: 100vh;
   width: 100vw;
+}
+
+/* Hide number input spinners */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
 }

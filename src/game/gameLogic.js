@@ -147,6 +147,15 @@ export function updateProjectiles(projectiles, enemies, dt) {
           const sd = Math.sqrt(sdx * sdx + sdy * sdy);
           if (sd <= proj.tower.splashRadius) {
             enemy.hp -= applyArmor(Math.round(proj.tower.damage * 0.6), enemy.armor);
+            // Propagate slow to splashed enemies
+            if (proj.tower.slowFactor) {
+              enemy.slowUntil = performance.now() + (proj.tower.slowDuration || 2000);
+            }
+            // Propagate poison to splashed enemies
+            if (proj.tower.poisonDps) {
+              enemy.poisonUntil = performance.now() + (proj.tower.poisonDuration || 3000);
+              enemy.poisonDps = proj.tower.poisonDps;
+            }
           }
         }
       }

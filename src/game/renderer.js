@@ -75,7 +75,7 @@ export function render(ctx, state) {
   drawSpawnsAndGoal(ctx, state.spawns, state.goal);
   drawTowers(ctx, state.towers, theme);
   drawEnemies(ctx, state.enemies);
-  drawProjectiles(ctx, state.projectiles);
+  drawProjectiles(ctx, state.projectiles, state.enemies);
   drawHoverCell(ctx, state);
 }
 
@@ -826,19 +826,28 @@ function drawSpider(ctx, ex, ey, isSlow) {
   ctx.fill();
 }
 
-function drawProjectiles(ctx, projectiles) {
+function drawProjectiles(ctx, projectiles, enemies) {
   for (const proj of projectiles) {
     if (proj.isChainArc) {
-      // Chain lightning arc — draw as a flickering line
+      // Chain lightning arc — draw as a flickering jagged line to target
+      const target = enemies.find(e => e.id === proj.targetId && e.hp > 0);
+      if (!target) continue;
+      const tx = target.x * CELL_SIZE;
+      const ty = target.y * CELL_SIZE;
       ctx.strokeStyle = proj.color;
       ctx.lineWidth = 2;
-      ctx.globalAlpha = 0.7;
+      ctx.globalAlpha = 0.8;
       ctx.beginPath();
       ctx.moveTo(proj.x, proj.y);
-      // Jagged midpoint
-      const mx = (proj.x + proj.x) / 2 + (Math.random() - 0.5) * 8;
-      const my = (proj.y + proj.y) / 2 + (Math.random() - 0.5) * 8;
-      ctx.lineTo(mx, my);
+      // Jagged midpoints for lightning effect
+      const segments = 3;
+      for (let s = 1; s < segments; s++) {
+        const frac = s / segments;
+        const mx = proj.x + (tx - proj.x) * frac + (Math.random() - 0.5) * 12;
+        const my = proj.y + (ty - proj.y) * frac + (Math.random() - 0.5) * 12;
+        ctx.lineTo(mx, my);
+      }
+      ctx.lineTo(tx, ty);
       ctx.stroke();
       ctx.globalAlpha = 1;
       continue;
@@ -876,6 +885,22 @@ function drawProjectiles(ctx, projectiles) {
       ctx.beginPath();
       ctx.arc(proj.x, proj.y, 7, 0, Math.PI * 2);
       ctx.fill();
+    } else if (proj.tower.typeId === 'water') {
+      // Tidal wave projectile
+      ctx.fillStyle = 'rgba(68, 221, 255, 0.6)';
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#44ddff';
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      // Wave crest lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(proj.x, proj.y, 5, -0.8, 0.8);
+      ctx.stroke();
     } else {
       // Default projectile
       ctx.fillStyle = proj.color;
