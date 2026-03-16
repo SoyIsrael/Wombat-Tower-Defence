@@ -264,7 +264,7 @@ export function useGameLoop(canvasRef, settings) {
         }
 
         // Update towers
-        const goldEarned = updateTowers(s.towers, s.enemies, s.projectiles, now);
+        const goldEarned = updateTowers(s.towers, s.enemies, s.projectiles, now, s.waveActive);
         if (goldEarned > 0) {
           s.gold += goldEarned;
           setGold(s.gold);

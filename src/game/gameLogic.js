@@ -59,13 +59,13 @@ export function updateEnemies(enemies, dt) {
   return { alive, reached };
 }
 
-export function updateTowers(towers, enemies, projectiles, now) {
+export function updateTowers(towers, enemies, projectiles, now, waveActive) {
   let goldEarned = 0;
 
   for (const tower of towers) {
-    // Money tower
+    // Money tower — only generates gold during active waves
     if (tower.typeId === 'money') {
-      if (now - tower.lastGold >= MONEY_TOWER_INTERVAL) {
+      if (waveActive && now - tower.lastGold >= MONEY_TOWER_INTERVAL) {
         tower.lastGold = now;
         goldEarned += MONEY_TOWER_AMOUNT;
       }
