@@ -172,6 +172,10 @@ export function createTower(typeId, col, row) {
     row,
     lastFired: 0,
     lastGold: 0,
+    upgrades: [0, 0, 0],
+    totalSpent: def.cost,
+    lastTargetId: null,
+    rampCount: 0,
     ...def,
   };
 }

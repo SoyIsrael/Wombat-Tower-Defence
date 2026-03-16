@@ -1,7 +1,8 @@
 import { CELL_SIZE, MONEY_TOWER_INTERVAL, MONEY_TOWER_AMOUNT } from './constants.js';
 
-function applyArmor(damage, armor) {
-  return Math.max(1, damage - (armor || 0));
+function applyArmor(damage, armor, armorPierce) {
+  const effectiveArmor = Math.max(0, (armor || 0) - (armorPierce || 0));
+  return Math.max(1, damage - effectiveArmor);
 }
 
 export function updateEnemies(enemies, dt) {
@@ -15,16 +16,29 @@ export function updateEnemies(enemies, dt) {
     // Poison damage over time
     if (enemy.poisonUntil && enemy.poisonUntil > now && enemy.poisonDps) {
       enemy.hp -= applyArmor(enemy.poisonDps * dt, (enemy.armor || 0) * dt);
-      if (enemy.hp <= 0) {
-        // Don't add to alive, will be cleaned up as a kill
-        continue;
-      }
+      if (enemy.hp <= 0) continue;
+    }
+
+    // Burn damage over time (separate from poison)
+    if (enemy.burnUntil && enemy.burnUntil > now && enemy.burnDps) {
+      enemy.hp -= applyArmor(enemy.burnDps * dt, (enemy.armor || 0) * dt);
+      if (enemy.hp <= 0) continue;
     }
 
     let speed = enemy.baseSpeed;
-    if (enemy.slowUntil > now) {
-      speed *= 0.4;
+
+    // Stun (speed = 0)
+    if (enemy.stunUntil && enemy.stunUntil > now) {
+      speed = 0;
+    } else if (enemy.slowUntil > now) {
+      speed *= enemy.currentSlowFactor || 0.4;
     }
+
+    // Burn slow
+    if (enemy.burnSlowUntil && enemy.burnSlowUntil > now) {
+      speed *= enemy.burnSlowFactor || 1;
+    }
+
     enemy.speed = speed;
 
     const target = enemy.path[enemy.pathIndex + 1];
@@ -59,49 +73,115 @@ export function updateEnemies(enemies, dt) {
   return { alive, reached };
 }
 
+// Compute aura buffs for a tower from nearby support towers
+function getAuraBuffs(tower, allTowers) {
+  let cooldownMult = 1;
+  let damageMult = 1;
+
+  for (const other of allTowers) {
+    if (other.id === tower.id) continue;
+    if (!other.auraRange || !other.auraCooldownBonus) continue;
+
+    const dx = tower.col - other.col;
+    const dy = tower.row - other.row;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist <= other.auraRange) {
+      cooldownMult = Math.min(cooldownMult, other.auraCooldownBonus || 1);
+      damageMult = Math.max(damageMult, other.auraDamageBonus || 1);
+    }
+  }
+
+  return { cooldownMult, damageMult };
+}
+
 export function updateTowers(towers, enemies, projectiles, now, waveActive) {
   let goldEarned = 0;
+
+  // DPS auras (zapper bottom path)
+  for (const tower of towers) {
+    if (tower.auraDps && tower.auraRange) {
+      for (const enemy of enemies) {
+        if (enemy.hp <= 0) continue;
+        const dx = enemy.x - (tower.col + 0.5);
+        const dy = enemy.y - (tower.row + 0.5);
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= tower.auraRange) {
+          enemy.hp -= tower.auraDps * (1 / 60); // approx per frame at 60fps
+        }
+      }
+    }
+  }
 
   for (const tower of towers) {
     // Money tower — only generates gold during active waves
     if (tower.typeId === 'money') {
-      if (waveActive && now - tower.lastGold >= MONEY_TOWER_INTERVAL) {
+      const interval = tower.moneyInterval || MONEY_TOWER_INTERVAL;
+      const amount = tower.moneyAmount || MONEY_TOWER_AMOUNT;
+      if (waveActive && now - tower.lastGold >= interval) {
         tower.lastGold = now;
-        goldEarned += MONEY_TOWER_AMOUNT;
+        goldEarned += amount;
       }
       continue;
     }
 
     // Combat tower
-    if (now - tower.lastFired < tower.cooldown) continue;
+    const aura = getAuraBuffs(tower, towers);
+    const effectiveCooldown = tower.cooldown * aura.cooldownMult;
+
+    if (now - tower.lastFired < effectiveCooldown) continue;
 
     const tcx = tower.col + 0.5;
     const tcy = tower.row + 0.5;
 
-    let closest = null;
-    let closestDist = Infinity;
+    // Find targets
+    const targetsNeeded = tower.multiTarget || 1;
+    const targets = [];
 
-    for (const enemy of enemies) {
-      if (enemy.hp <= 0) continue;
-      const dx = enemy.x - tcx;
-      const dy = enemy.y - tcy;
-      const d = Math.sqrt(dx * dx + dy * dy);
-      if (d <= tower.range && d < closestDist) {
-        closest = enemy;
-        closestDist = d;
+    if (tower.targetStrongest) {
+      // Target strongest (highest HP) enemies
+      const inRange = enemies
+        .filter(e => {
+          if (e.hp <= 0) return false;
+          const dx = e.x - tcx;
+          const dy = e.y - tcy;
+          return Math.sqrt(dx * dx + dy * dy) <= tower.range;
+        })
+        .sort((a, b) => b.hp - a.hp);
+      for (let i = 0; i < Math.min(targetsNeeded, inRange.length); i++) {
+        targets.push(inRange[i]);
+      }
+    } else {
+      // Target closest enemies
+      const inRange = [];
+      for (const enemy of enemies) {
+        if (enemy.hp <= 0) continue;
+        const dx = enemy.x - tcx;
+        const dy = enemy.y - tcy;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d <= tower.range) {
+          inRange.push({ enemy, dist: d });
+        }
+      }
+      inRange.sort((a, b) => a.dist - b.dist);
+      for (let i = 0; i < Math.min(targetsNeeded, inRange.length); i++) {
+        targets.push(inRange[i].enemy);
       }
     }
 
-    if (closest) {
+    if (targets.length > 0) {
       tower.lastFired = now;
-      projectiles.push({
-        x: tcx * CELL_SIZE,
-        y: tcy * CELL_SIZE,
-        targetId: closest.id,
-        tower,
-        speed: tower.projectileSpeed || 6,
-        color: tower.projectileColor || '#fff',
-      });
+      for (const target of targets) {
+        projectiles.push({
+          x: tcx * CELL_SIZE,
+          y: tcy * CELL_SIZE,
+          targetId: target.id,
+          tower,
+          speed: tower.projectileSpeed || 6,
+          color: tower.projectileColor || '#fff',
+          auraDamageMult: aura.damageMult,
+        });
+      }
     }
   }
 
@@ -125,11 +205,51 @@ export function updateProjectiles(projectiles, enemies, dt) {
 
     if (move >= dist) {
       // Hit!
-      target.hp -= applyArmor(proj.tower.damage, target.armor);
+      let damage = proj.tower.damage;
+
+      // Aura damage bonus
+      damage = Math.round(damage * (proj.auraDamageMult || 1));
+
+      // Crit chance
+      if (proj.tower.critChance && Math.random() < proj.tower.critChance) {
+        damage = Math.round(damage * (proj.tower.critMultiplier || 2));
+      }
+
+      // Execute bonus (extra dmg to low HP enemies)
+      if (proj.tower.executeDamageBonus && target.hp / target.maxHp < 0.3) {
+        damage = Math.round(damage * proj.tower.executeDamageBonus);
+      }
+
+      // Ramp damage (laser focus)
+      if (proj.tower.rampDamage) {
+        if (proj.tower.lastTargetId === target.id) {
+          proj.tower.rampCount = Math.min(
+            (proj.tower.rampCount || 0) + proj.tower.rampDamage,
+            proj.tower.rampMax || 100
+          );
+        } else {
+          proj.tower.rampCount = 0;
+          proj.tower.lastTargetId = target.id;
+        }
+        damage += proj.tower.rampCount;
+      }
+
+      // One-shot threshold (sniper T4)
+      if (proj.tower.oneShotThreshold && target.hp <= proj.tower.oneShotThreshold) {
+        target.hp = 0;
+      } else {
+        target.hp -= applyArmor(damage, target.armor, proj.tower.armorPierce);
+      }
 
       // Slow effect
       if (proj.tower.slowFactor) {
         target.slowUntil = performance.now() + (proj.tower.slowDuration || 2000);
+        target.currentSlowFactor = proj.tower.slowFactor;
+      }
+
+      // Stun effect (on primary target)
+      if (proj.tower.stunChance && Math.random() < proj.tower.stunChance) {
+        target.stunUntil = performance.now() + (proj.tower.stunDuration || 1000);
       }
 
       // Poison effect
@@ -138,24 +258,61 @@ export function updateProjectiles(projectiles, enemies, dt) {
         target.poisonDps = proj.tower.poisonDps;
       }
 
+      // Burn effect
+      if (proj.tower.burnDps) {
+        target.burnUntil = performance.now() + (proj.tower.burnDuration || 2000);
+        target.burnDps = proj.tower.burnDps;
+        if (proj.tower.burnSlowFactor) {
+          target.burnSlowUntil = target.burnUntil;
+          target.burnSlowFactor = proj.tower.burnSlowFactor;
+        }
+      }
+
+      // Brittle mark
+      if (proj.tower.brittleBonus) {
+        target.brittleBonus = proj.tower.brittleBonus;
+        target.brittleUntil = performance.now() + (proj.tower.slowDuration || 3000);
+      }
+
       // Splash damage
       if (proj.tower.splashRadius) {
+        const splashRatio = proj.tower.splashDamageRatio ?? 0.6;
         for (const enemy of enemies) {
           if (enemy.id === target.id || enemy.hp <= 0) continue;
           const sdx = enemy.x - target.x;
           const sdy = enemy.y - target.y;
           const sd = Math.sqrt(sdx * sdx + sdy * sdy);
           if (sd <= proj.tower.splashRadius) {
-            enemy.hp -= applyArmor(Math.round(proj.tower.damage * 0.6), enemy.armor);
+            let splashDmg = Math.round(damage * splashRatio);
+            // Brittle bonus on splash targets
+            if (enemy.brittleBonus && enemy.brittleUntil > performance.now()) {
+              splashDmg += enemy.brittleBonus;
+            }
+            enemy.hp -= applyArmor(splashDmg, enemy.armor, proj.tower.armorPierce);
             // Propagate slow to splashed enemies
             if (proj.tower.slowFactor) {
               enemy.slowUntil = performance.now() + (proj.tower.slowDuration || 2000);
+              enemy.currentSlowFactor = proj.tower.slowFactor;
             }
             // Propagate poison to splashed enemies
             if (proj.tower.poisonDps) {
               enemy.poisonUntil = performance.now() + (proj.tower.poisonDuration || 3000);
               enemy.poisonDps = proj.tower.poisonDps;
             }
+            // Propagate burn to splashed enemies
+            if (proj.tower.burnDps) {
+              enemy.burnUntil = performance.now() + (proj.tower.burnDuration || 2000);
+              enemy.burnDps = proj.tower.burnDps;
+              if (proj.tower.burnSlowFactor) {
+                enemy.burnSlowUntil = enemy.burnUntil;
+                enemy.burnSlowFactor = proj.tower.burnSlowFactor;
+              }
+            }
+            // Stun on splash
+            if (proj.tower.stunChance && Math.random() < proj.tower.stunChance) {
+              enemy.stunUntil = performance.now() + (proj.tower.stunDuration || 1000);
+            }
+            if (enemy.hp <= 0) kills.push(enemy);
           }
         }
       }
@@ -163,7 +320,7 @@ export function updateProjectiles(projectiles, enemies, dt) {
       // Chain lightning
       if (proj.tower.chainCount) {
         let chainSource = target;
-        let chainDamage = proj.tower.damage;
+        let chainDamage = damage;
         const hitSet = new Set([target.id]);
 
         for (let i = 0; i < proj.tower.chainCount; i++) {
@@ -184,15 +341,31 @@ export function updateProjectiles(projectiles, enemies, dt) {
           }
 
           if (!nextTarget) break;
-          nextTarget.hp -= applyArmor(Math.round(chainDamage), nextTarget.armor);
+          let finalChainDmg = Math.round(chainDamage);
+          // Brittle bonus on chain targets
+          if (nextTarget.brittleBonus && nextTarget.brittleUntil > performance.now()) {
+            finalChainDmg += nextTarget.brittleBonus;
+          }
+          nextTarget.hp -= applyArmor(finalChainDmg, nextTarget.armor, proj.tower.armorPierce);
           hitSet.add(nextTarget.id);
+
+          // Chain slow
+          if (proj.tower.chainSlowFactor) {
+            nextTarget.slowUntil = performance.now() + (proj.tower.chainSlowDuration || 1000);
+            nextTarget.currentSlowFactor = proj.tower.chainSlowFactor;
+          }
+
+          // Chain stun
+          if (proj.tower.stunChance && Math.random() < proj.tower.stunChance) {
+            nextTarget.stunUntil = performance.now() + (proj.tower.stunDuration || 1000);
+          }
 
           // Add a visual chain arc
           projectiles.push({
             x: chainSource.x * CELL_SIZE,
             y: chainSource.y * CELL_SIZE,
             targetId: nextTarget.id,
-            tower: { ...proj.tower, chainCount: 0, damage: 0 }, // visual only, no re-chain
+            tower: { ...proj.tower, chainCount: 0, damage: 0 },
             speed: 20,
             color: proj.tower.accent || '#cc88ff',
             isChainArc: true,
@@ -201,6 +374,14 @@ export function updateProjectiles(projectiles, enemies, dt) {
           if (nextTarget.hp <= 0) kills.push(nextTarget);
           chainSource = nextTarget;
         }
+      }
+
+      // Apply brittle bonus to primary target damage (after initial hit calc)
+      // Actually re-check: brittle adds flat damage from ALL sources
+      // We apply brittle BEFORE armor on the primary hit too
+      if (target.brittleBonus && target.brittleUntil > performance.now() && !proj.tower.brittleBonus) {
+        // Other towers deal bonus damage to brittle targets
+        target.hp -= target.brittleBonus;
       }
 
       if (target.hp <= 0) {

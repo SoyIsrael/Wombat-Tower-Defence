@@ -76,7 +76,38 @@ export function render(ctx, state) {
   drawTowers(ctx, state.towers, theme);
   drawEnemies(ctx, state.enemies);
   drawProjectiles(ctx, state.projectiles, state.enemies);
+  drawInspectedHighlight(ctx, state);
   drawHoverCell(ctx, state);
+}
+
+function drawInspectedHighlight(ctx, state) {
+  if (!state.inspectedTowerId) return;
+  const tower = state.towers.find(t => t.id === state.inspectedTowerId);
+  if (!tower) return;
+
+  const x = tower.col * CELL_SIZE;
+  const y = tower.row * CELL_SIZE;
+  const cx = x + CELL_SIZE / 2;
+  const cy = y + CELL_SIZE / 2;
+
+  // Highlight border
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+
+  // Range circle
+  if (tower.range > 0) {
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, tower.range * CELL_SIZE, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255, 215, 0, 0.05)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, tower.range * CELL_SIZE, 0, Math.PI * 2);
+    ctx.fill();
+  }
 }
 
 function drawGrid(ctx, pathSet, blockedSet, waterSet, wallSet, theme) {
@@ -219,6 +250,37 @@ function drawTowers(ctx, towers, theme) {
       case 'fortress': drawFortressWombat(ctx, cx, cy, r, tower, now); break;
       case 'tesla': drawTeslaWombat(ctx, cx, cy, r, tower, now); break;
       default: drawBaseWombat(ctx, cx, cy, r, tower.color, tower.accent); break;
+    }
+
+    // Upgrade level pips (3 small bars at bottom of cell)
+    if (tower.upgrades) {
+      const pipColors = ['#ff6b6b', '#8ecae6', '#4aff4a'];
+      const pipY = y + CELL_SIZE - 5;
+      const pipW = (CELL_SIZE - 8) / 3;
+      for (let p = 0; p < 3; p++) {
+        const level = tower.upgrades[p];
+        if (level === 0) continue;
+        const px = x + 3 + p * (pipW + 1);
+        // Background
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(px, pipY, pipW, 3);
+        // Fill based on level (1-4)
+        ctx.fillStyle = pipColors[p];
+        ctx.fillRect(px, pipY, pipW * (level / 4), 3);
+      }
+    }
+
+    // High-tier glow effect (T3+ on any path)
+    if (tower.upgrades) {
+      const maxLevel = Math.max(...tower.upgrades);
+      if (maxLevel >= 3) {
+        const glowAlpha = maxLevel >= 4 ? 0.2 : 0.1;
+        const glowSize = maxLevel >= 4 ? 6 : 3;
+        ctx.fillStyle = `rgba(255, 215, 0, ${glowAlpha})`;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + glowSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     if (tower.showRange && tower.range > 0) {

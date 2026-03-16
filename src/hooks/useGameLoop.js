@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { COLS, ROWS, CELL_SIZE, STARTING_GOLD, STARTING_LIVES } from '../game/constants.js';
 import { TOWER_TYPES, createTower, SELL_REFUND } from '../game/towers.js';
+import { canUpgradePath, getUpgradeCost, applyUpgrades } from '../game/upgrades.js';
 import { createEnemy, getEnemyCountForWave, getSpawnInterval, getEnemyTypesForWave } from '../game/enemies.js';
 import { computePaths, wouldBlockPath, tracePathFrom } from '../game/pathfinding.js';
 import { updateEnemies, updateTowers, updateProjectiles } from '../game/gameLogic.js';
@@ -41,6 +42,7 @@ export function useGameLoop(canvasRef, settings) {
     gameOver: false,
     selectedTowerId: null,
     hoverCell: null,
+    inspectedTowerId: null,
   });
 
   const animRef = useRef(null);
@@ -168,7 +170,7 @@ export function useGameLoop(canvasRef, settings) {
     if (idx === -1) return;
 
     const tower = s.towers[idx];
-    const refund = Math.floor(tower.cost * SELL_REFUND);
+    const refund = Math.floor(tower.totalSpent * SELL_REFUND);
     s.towers.splice(idx, 1);
 
     if (!tower.waterOnly) {
@@ -194,6 +196,26 @@ export function useGameLoop(canvasRef, settings) {
     setGold(s.gold);
   }, [map, mapBlockedSet, waterSet, wallSet]);
 
+  const upgradeTower = useCallback((towerId, pathIndex) => {
+    const s = stateRef.current;
+    if (s.gameOver) return false;
+
+    const tower = s.towers.find(t => t.id === towerId);
+    if (!tower) return false;
+
+    if (!canUpgradePath(tower, pathIndex)) return false;
+
+    const cost = getUpgradeCost(tower, pathIndex);
+    if (s.gold < cost) return false;
+
+    tower.upgrades[pathIndex]++;
+    tower.totalSpent += cost;
+    s.gold -= cost;
+    applyUpgrades(tower);
+    setGold(s.gold);
+    return true;
+  }, []);
+
   const restart = useCallback(() => {
     const s = stateRef.current;
     s.gold = STARTING_GOLD;
@@ -207,6 +229,7 @@ export function useGameLoop(canvasRef, settings) {
     s.waveEnemiesLeft = 0;
     s.gameOver = false;
     s.selectedTowerId = null;
+    s.inspectedTowerId = null;
     recomputePaths();
     setGold(STARTING_GOLD);
     setLives(STARTING_LIVES);
@@ -322,6 +345,7 @@ export function useGameLoop(canvasRef, settings) {
           canAfford,
           wouldBlock: wouldBlockVal,
           background: settingsRef.current.background,
+          inspectedTowerId: s.inspectedTowerId,
         });
       }
 
@@ -339,7 +363,7 @@ export function useGameLoop(canvasRef, settings) {
     showMathChallenge,
     selectedTowerId, setSelectedTowerId,
     hoverCell, setHoverCell,
-    placeTower, sellTower, startWave, addGold, restart,
+    placeTower, sellTower, upgradeTower, startWave, addGold, restart,
     stateRef,
   };
 }
