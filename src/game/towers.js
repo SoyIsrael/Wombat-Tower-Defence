@@ -166,6 +166,7 @@ export const SELL_REFUND = 0.5;
 export function createTower(typeId, col, row) {
   const def = TOWER_TYPES[typeId];
   return {
+    ...def,
     id: `tower-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     typeId,
     col,
@@ -176,6 +177,5 @@ export function createTower(typeId, col, row) {
     totalSpent: def.cost,
     lastTargetId: null,
     rampCount: 0,
-    ...def,
   };
 }

@@ -150,7 +150,7 @@ export default function MathChallenge({ wave, onComplete, settings }) {
 
   return (
     <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-[90]">
-      <div className={`bg-brown-medium border-[3px] border-gold-border rounded-xl py-7 px-9 text-center min-w-[400px] max-w-[500px] max-h-[90vh] overflow-y-auto ${showWhiteboard ? 'max-w-[700px]' : ''}`}>
+      <div className={`bg-brown-medium border-[3px] border-gold-border rounded-xl py-7 px-9 text-center min-w-[400px] max-w-[500px] max-h-[90vh] overflow-y-auto ${showWhiteboard ? 'max-w-[90vw] w-[90vw]' : ''}`}>
         <div className="mb-5">
           <h2 className="text-2xl font-bold text-gold-text mb-1.5">Math Challenge</h2>
           <div className="flex items-center justify-center gap-4 mb-0.5">

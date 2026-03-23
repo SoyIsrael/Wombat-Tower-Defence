@@ -95,9 +95,9 @@ const Whiteboard = forwardRef(function Whiteboard(_, ref) {
     <div className="mt-2 flex flex-col items-center gap-1.5">
       <canvas
         ref={canvasRef}
-        width={500}
-        height={200}
-        className="w-full max-w-[500px] h-[150px] bg-brown-dark border-2 border-brown-border rounded-md cursor-crosshair"
+        width={800}
+        height={400}
+        className="w-full h-[250px] bg-brown-dark border-2 border-brown-border rounded-md cursor-crosshair"
         style={{ touchAction: 'none' }}
         onMouseDown={startDraw}
         onMouseMove={draw}
