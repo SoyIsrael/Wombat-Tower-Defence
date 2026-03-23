@@ -33,7 +33,8 @@ const Whiteboard = forwardRef(function Whiteboard(_, ref) {
   }, []);
 
   const startDraw = useCallback((e) => {
-    e.preventDefault();
+    // Don't preventDefault on touchstart — it blocks focus/click on other elements
+    if (e.type === 'mousedown') e.preventDefault();
     drawing.current = true;
     lastPos.current = getPos(e);
   }, [getPos]);
@@ -95,9 +96,9 @@ const Whiteboard = forwardRef(function Whiteboard(_, ref) {
     <div className="mt-2 flex flex-col items-center gap-1.5">
       <canvas
         ref={canvasRef}
-        width={800}
-        height={400}
-        className="w-full h-[250px] bg-brown-dark border-2 border-brown-border rounded-md cursor-crosshair"
+        width={1000}
+        height={600}
+        className="w-full h-[350px] bg-brown-dark border-2 border-brown-border rounded-md cursor-crosshair"
         style={{ touchAction: 'none' }}
         onMouseDown={startDraw}
         onMouseMove={draw}
