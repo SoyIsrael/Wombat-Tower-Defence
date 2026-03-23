@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { generateProblem, checkAnswer, getProblemsPerWave, getGoldPerCorrect } from '../game/mathProblems.js';
+import Whiteboard from './Whiteboard.jsx';
 
 export default function MathChallenge({ wave, onComplete, settings }) {
   const total = getProblemsPerWave();
@@ -145,9 +146,12 @@ export default function MathChallenge({ wave, onComplete, settings }) {
   const timerUrgent = timerDuration > 0 && timeLeft <= 5;
   const timerWarning = timerDuration > 0 && timeLeft <= 15 && !timerUrgent;
 
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const whiteboardRef = useRef(null);
+
   return (
     <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-[90]">
-      <div className="bg-brown-medium border-[3px] border-gold-border rounded-xl py-7 px-9 text-center min-w-[400px] max-w-[500px]">
+      <div className={`bg-brown-medium border-[3px] border-gold-border rounded-xl py-7 px-9 text-center min-w-[400px] max-w-[500px] max-h-[90vh] overflow-y-auto ${showWhiteboard ? 'max-w-[700px]' : ''}`}>
         <div className="mb-5">
           <h2 className="text-2xl font-bold text-gold-text mb-1.5">Math Challenge</h2>
           <div className="flex items-center justify-center gap-4 mb-0.5">
@@ -175,6 +179,19 @@ export default function MathChallenge({ wave, onComplete, settings }) {
             <span className="text-[26px] font-bold text-gold-text">=</span>
             <span className="text-[26px] font-bold text-gold-text">?</span>
           </div>
+        </div>
+
+        <div className="mb-3">
+          <button
+            type="button"
+            className="text-xs text-text-muted hover:text-gold-text transition-colors"
+            onClick={() => setShowWhiteboard(v => !v)}
+          >
+            {showWhiteboard ? 'Hide scratchpad' : 'Show scratchpad'}
+          </button>
+          {showWhiteboard && (
+            <Whiteboard ref={whiteboardRef} />
+          )}
         </div>
 
         <form className="flex flex-col items-center gap-3.5 mt-4" onSubmit={handleSubmit}>

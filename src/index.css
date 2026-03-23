@@ -36,12 +36,16 @@ body {
   color: var(--color-text);
   font-family: 'Segoe UI', system-ui, sans-serif;
   overflow: hidden;
-  height: 100vh;
+  height: 100dvh;
+  height: 100vh; /* fallback for older browsers */
+  height: 100dvh;
 }
 
 #root {
   display: flex;
+  height: 100dvh;
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
 }
 
