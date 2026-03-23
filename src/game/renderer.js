@@ -76,6 +76,7 @@ export function render(ctx, state) {
   drawTowers(ctx, state.towers, theme);
   drawEnemies(ctx, state.enemies);
   drawProjectiles(ctx, state.projectiles, state.enemies);
+  drawParticles(ctx, state.particles || []);
   drawInspectedHighlight(ctx, state);
   drawHoverCell(ctx, state);
 }
@@ -618,25 +619,60 @@ function drawTeslaWombat(ctx, cx, cy, r, tower, now) {
 }
 
 function drawEnemies(ctx, enemies) {
+  const now = performance.now();
+
+  // Draw centipede connectors first (behind the segments)
+  const centipedeGroups = new Map();
+  for (const enemy of enemies) {
+    if (enemy.hp <= 0 || !enemy.centipedeGroupId) continue;
+    if (!centipedeGroups.has(enemy.centipedeGroupId)) centipedeGroups.set(enemy.centipedeGroupId, []);
+    centipedeGroups.get(enemy.centipedeGroupId).push(enemy);
+  }
+  for (const segments of centipedeGroups.values()) {
+    segments.sort((a, b) => a.segmentIndex - b.segmentIndex);
+    ctx.strokeStyle = '#774411';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    for (let i = 0; i < segments.length; i++) {
+      const sx = segments[i].x * CELL_SIZE;
+      const sy = segments[i].y * CELL_SIZE;
+      if (i === 0) ctx.moveTo(sx, sy);
+      else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+  }
+
   for (const enemy of enemies) {
     if (enemy.hp <= 0) continue;
     const ex = enemy.x * CELL_SIZE;
     const ey = enemy.y * CELL_SIZE;
-    const now = performance.now();
     const isSlow = enemy.slowUntil > now;
     const isPoisoned = enemy.poisonUntil && enemy.poisonUntil > now;
+    const phase = enemy.animPhase || 0;
 
     const drawType = enemy.baseType || enemy.typeId;
     switch (drawType) {
       case 'beetle':
-        drawBeetle(ctx, ex, ey, isSlow);
+        drawBeetle(ctx, ex, ey, isSlow, now, phase);
         break;
       case 'spider':
-        drawSpider(ctx, ex, ey, isSlow);
+        drawSpider(ctx, ex, ey, isSlow, now, phase);
+        break;
+      case 'firefly':
+        drawFirefly(ctx, ex, ey, isSlow, now, phase);
+        break;
+      case 'brood_spider':
+        drawBroodSpider(ctx, ex, ey, isSlow, now, phase);
+        break;
+      case 'spiderling':
+        drawSpiderling(ctx, ex, ey, isSlow, now, phase);
+        break;
+      case 'centipede':
+        drawCentipede(ctx, ex, ey, isSlow, now, phase, enemy);
         break;
       case 'ant':
       default:
-        drawAnt(ctx, ex, ey, isSlow);
+        drawAnt(ctx, ex, ey, isSlow, now, phase);
         break;
     }
 
@@ -664,7 +700,6 @@ function drawEnemies(ctx, enemies) {
       ctx.lineWidth = 1;
       const ax = barX - 8;
       const ay = barY - 1;
-      // Tiny shield icon
       ctx.beginPath();
       ctx.moveTo(ax, ay);
       ctx.lineTo(ax + 5, ay);
@@ -681,6 +716,15 @@ function drawEnemies(ctx, enemies) {
       ctx.fillStyle = 'rgba(100, 220, 50, 0.5)';
       ctx.beginPath();
       ctx.arc(ex + barW / 2 + 4, barY + 2, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Evasion shimmer (firefly)
+    if (enemy.evasionChance) {
+      const shimmer = 0.15 + Math.sin(now / 200 + phase) * 0.1;
+      ctx.fillStyle = `rgba(255, 255, 200, ${shimmer})`;
+      ctx.beginPath();
+      ctx.arc(ex, ey, CELL_SIZE * 0.25, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -754,7 +798,7 @@ function drawArmorOverlay(ctx, ex, ey, baseType) {
   }
 }
 
-function drawAnt(ctx, ex, ey, isSlow) {
+function drawAnt(ctx, ex, ey, isSlow, now, phase) {
   const color = isSlow ? '#6688bb' : '#884422';
   const r = CELL_SIZE * 0.22;
 
@@ -767,25 +811,27 @@ function drawAnt(ctx, ex, ey, isSlow) {
   ctx.arc(ex, ey - 4, r * 0.7, 0, Math.PI * 2);
   ctx.fill();
 
-  // Antennae
+  // Animated antennae
+  const antennaWiggle = Math.sin(now / 200 + phase) * 3;
   ctx.strokeStyle = color;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.moveTo(ex - 3, ey - 8);
-  ctx.lineTo(ex - 8, ey - 14);
+  ctx.lineTo(ex - 8 + antennaWiggle, ey - 14);
   ctx.moveTo(ex + 3, ey - 8);
-  ctx.lineTo(ex + 8, ey - 14);
+  ctx.lineTo(ex + 8 - antennaWiggle, ey - 14);
   ctx.stroke();
 
-  // Legs
+  // Animated legs
   ctx.lineWidth = 1;
   for (let i = -1; i <= 1; i++) {
+    const legAnim = Math.sin(now / 150 + i * 1.2 + phase) * 2;
     const ly = ey + 2 + i * 5;
     ctx.beginPath();
     ctx.moveTo(ex - r, ly);
-    ctx.lineTo(ex - r - 5, ly + 3);
+    ctx.lineTo(ex - r - 5, ly + 3 + legAnim);
     ctx.moveTo(ex + r, ly);
-    ctx.lineTo(ex + r + 5, ly + 3);
+    ctx.lineTo(ex + r + 5, ly + 3 - legAnim);
     ctx.stroke();
   }
 
@@ -802,14 +848,22 @@ function drawAnt(ctx, ex, ey, isSlow) {
   ctx.fill();
 }
 
-function drawBeetle(ctx, ex, ey, isSlow) {
+function drawBeetle(ctx, ex, ey, isSlow, now, phase) {
   const color = isSlow ? '#6688bb' : '#336633';
   const r = CELL_SIZE * 0.3;
+  const pulse = 1 + Math.sin(now / 400 + phase) * 0.03;
 
-  // Shell
+  // Shell with flutter
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.ellipse(ex, ey, r, r * 1.1, 0, 0, Math.PI * 2);
+  ctx.ellipse(ex, ey, r, r * 1.1 * pulse, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Shell shimmer highlight
+  const shimmerAlpha = 0.12 + Math.sin(now / 600 + phase) * 0.08;
+  ctx.fillStyle = `rgba(255, 255, 255, ${shimmerAlpha})`;
+  ctx.beginPath();
+  ctx.ellipse(ex - r * 0.2, ey - r * 0.3, r * 0.4, r * 0.3, -0.3, 0, Math.PI * 2);
   ctx.fill();
 
   // Wing line
@@ -826,14 +880,15 @@ function drawBeetle(ctx, ex, ey, isSlow) {
   ctx.arc(ex, ey - r * 0.9, r * 0.4, 0, Math.PI * 2);
   ctx.fill();
 
-  // Antennae
+  // Animated antennae
+  const wiggle = Math.sin(now / 250 + phase) * 2;
   ctx.strokeStyle = color;
   ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.moveTo(ex - 3, ey - r - 2);
-  ctx.lineTo(ex - 6, ey - r - 8);
+  ctx.lineTo(ex - 6 + wiggle, ey - r - 8);
   ctx.moveTo(ex + 3, ey - r - 2);
-  ctx.lineTo(ex + 6, ey - r - 8);
+  ctx.lineTo(ex + 6 - wiggle, ey - r - 8);
   ctx.stroke();
 
   // Eyes
@@ -844,7 +899,7 @@ function drawBeetle(ctx, ex, ey, isSlow) {
   ctx.fill();
 }
 
-function drawSpider(ctx, ex, ey, isSlow) {
+function drawSpider(ctx, ex, ey, isSlow, now, phase) {
   const color = isSlow ? '#6688bb' : '#444444';
   const r = CELL_SIZE * 0.2;
 
@@ -859,24 +914,26 @@ function drawSpider(ctx, ex, ey, isSlow) {
   ctx.ellipse(ex, ey + r * 1.2, r * 1.2, r * 0.9, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // 8 Legs
+  // 8 Animated legs with gait cycle
   ctx.strokeStyle = color;
   ctx.lineWidth = 1.5;
   const legAngles = [-0.8, -0.4, 0.4, 0.8];
-  for (const angle of legAngles) {
+  for (let li = 0; li < legAngles.length; li++) {
+    const angle = legAngles[li];
+    const gait = Math.sin(now / 180 + li * 1.5 + phase) * 3;
     const lx = Math.cos(angle) * (r + 8);
     const ly = Math.sin(angle) * 4;
     // Left legs
     ctx.beginPath();
     ctx.moveTo(ex - r * 0.5, ey + ly);
-    ctx.lineTo(ex - lx, ey + ly - 4);
-    ctx.lineTo(ex - lx - 2, ey + ly + 4);
+    ctx.lineTo(ex - lx, ey + ly - 4 + gait);
+    ctx.lineTo(ex - lx - 2, ey + ly + 4 + gait);
     ctx.stroke();
     // Right legs
     ctx.beginPath();
     ctx.moveTo(ex + r * 0.5, ey + ly);
-    ctx.lineTo(ex + lx, ey + ly - 4);
-    ctx.lineTo(ex + lx + 2, ey + ly + 4);
+    ctx.lineTo(ex + lx, ey + ly - 4 - gait);
+    ctx.lineTo(ex + lx + 2, ey + ly + 4 - gait);
     ctx.stroke();
   }
 
@@ -886,6 +943,241 @@ function drawSpider(ctx, ex, ey, isSlow) {
   ctx.arc(ex - 3, ey - 2, 2, 0, Math.PI * 2);
   ctx.arc(ex + 3, ey - 2, 2, 0, Math.PI * 2);
   ctx.fill();
+}
+
+function drawFirefly(ctx, ex, ey, isSlow, now, phase) {
+  const r = CELL_SIZE * 0.18;
+  const glowPulse = 0.3 + Math.sin(now / 300 + phase) * 0.25;
+
+  // Glow aura
+  const grad = ctx.createRadialGradient(ex, ey + 2, 0, ex, ey + 2, r * 3);
+  grad.addColorStop(0, `rgba(255, 230, 50, ${glowPulse})`);
+  grad.addColorStop(1, 'rgba(255, 230, 50, 0)');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(ex, ey + 2, r * 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Body
+  ctx.fillStyle = isSlow ? '#7799aa' : '#554400';
+  ctx.beginPath();
+  ctx.ellipse(ex, ey, r * 0.7, r, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Glowing abdomen
+  ctx.fillStyle = isSlow ? '#88aacc' : `rgba(255, 220, 0, ${0.7 + glowPulse * 0.3})`;
+  ctx.beginPath();
+  ctx.ellipse(ex, ey + r * 0.8, r * 0.6, r * 0.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Wings (flutter)
+  const wingAngle = Math.sin(now / 80 + phase) * 0.4;
+  ctx.fillStyle = 'rgba(200, 220, 255, 0.3)';
+  ctx.save();
+  ctx.translate(ex, ey);
+  // Left wing
+  ctx.save();
+  ctx.rotate(-0.6 + wingAngle);
+  ctx.beginPath();
+  ctx.ellipse(-r * 0.3, -r * 0.2, r * 1.2, r * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  // Right wing
+  ctx.save();
+  ctx.rotate(0.6 - wingAngle);
+  ctx.beginPath();
+  ctx.ellipse(r * 0.3, -r * 0.2, r * 1.2, r * 0.4, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.restore();
+
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(ex - 2, ey - r * 0.5, 1.5, 0, Math.PI * 2);
+  ctx.arc(ex + 2, ey - r * 0.5, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBroodSpider(ctx, ex, ey, isSlow, now, phase) {
+  const color = isSlow ? '#6688bb' : '#553344';
+  const r = CELL_SIZE * 0.28;
+
+  // Body (larger spider)
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(ex, ey, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Egg sac (pulsing abdomen)
+  const sacPulse = 1 + Math.sin(now / 500 + phase) * 0.05;
+  ctx.fillStyle = isSlow ? '#8899aa' : '#886655';
+  ctx.beginPath();
+  ctx.ellipse(ex, ey + r * 1.3, r * 1.4 * sacPulse, r * 1.1 * sacPulse, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Egg dots inside sac
+  ctx.fillStyle = 'rgba(255, 255, 220, 0.5)';
+  const eggPositions = [[-3, 1], [3, 1], [0, -2], [-2, 3], [2, 3]];
+  for (const [ox, oy] of eggPositions) {
+    ctx.beginPath();
+    ctx.arc(ex + ox, ey + r * 1.3 + oy, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 8 Animated legs
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  const legAngles = [-0.8, -0.4, 0.4, 0.8];
+  for (let li = 0; li < legAngles.length; li++) {
+    const angle = legAngles[li];
+    const gait = Math.sin(now / 200 + li * 1.5 + phase) * 3;
+    const lx = Math.cos(angle) * (r + 10);
+    const ly = Math.sin(angle) * 5;
+    ctx.beginPath();
+    ctx.moveTo(ex - r * 0.6, ey + ly);
+    ctx.lineTo(ex - lx, ey + ly - 5 + gait);
+    ctx.lineTo(ex - lx - 3, ey + ly + 5 + gait);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(ex + r * 0.6, ey + ly);
+    ctx.lineTo(ex + lx, ey + ly - 5 - gait);
+    ctx.lineTo(ex + lx + 3, ey + ly + 5 - gait);
+    ctx.stroke();
+  }
+
+  // Multiple red eyes
+  ctx.fillStyle = isSlow ? '#aaccff' : '#cc2222';
+  ctx.beginPath();
+  ctx.arc(ex - 4, ey - 3, 2, 0, Math.PI * 2);
+  ctx.arc(ex + 4, ey - 3, 2, 0, Math.PI * 2);
+  ctx.arc(ex - 2, ey - 5, 1.5, 0, Math.PI * 2);
+  ctx.arc(ex + 2, ey - 5, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawSpiderling(ctx, ex, ey, isSlow, now, phase) {
+  const color = isSlow ? '#8899bb' : '#999988';
+  const r = CELL_SIZE * 0.12;
+
+  // Tiny body
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(ex, ey, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Tiny abdomen
+  ctx.beginPath();
+  ctx.ellipse(ex, ey + r * 1.1, r * 0.9, r * 0.7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Fast animated legs
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  const legAngles = [-0.7, -0.3, 0.3, 0.7];
+  for (let li = 0; li < legAngles.length; li++) {
+    const angle = legAngles[li];
+    const gait = Math.sin(now / 100 + li * 1.8 + phase) * 2;
+    const lx = Math.cos(angle) * (r + 5);
+    const ly = Math.sin(angle) * 3;
+    ctx.beginPath();
+    ctx.moveTo(ex - r * 0.4, ey + ly);
+    ctx.lineTo(ex - lx, ey + ly - 3 + gait);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(ex + r * 0.4, ey + ly);
+    ctx.lineTo(ex + lx, ey + ly - 3 - gait);
+    ctx.stroke();
+  }
+
+  // Tiny eyes
+  ctx.fillStyle = '#cc4444';
+  ctx.beginPath();
+  ctx.arc(ex - 1.5, ey - 1, 1, 0, Math.PI * 2);
+  ctx.arc(ex + 1.5, ey - 1, 1, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawCentipede(ctx, ex, ey, isSlow, now, phase, enemy) {
+  const color = isSlow ? '#7799aa' : '#995522';
+  const isHead = !enemy.isSegment;
+  const r = CELL_SIZE * 0.2;
+
+  if (isHead) {
+    // Head - larger, with mandibles
+    ctx.fillStyle = isSlow ? '#6688aa' : '#773311';
+    ctx.beginPath();
+    ctx.arc(ex, ey, r * 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mandibles
+    const mandibleAnim = Math.sin(now / 300 + phase) * 0.2;
+    ctx.strokeStyle = isSlow ? '#556688' : '#551100';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(ex - 3, ey - r);
+    ctx.lineTo(ex - 6, ey - r - 6 + mandibleAnim * 4);
+    ctx.moveTo(ex + 3, ey - r);
+    ctx.lineTo(ex + 6, ey - r - 6 - mandibleAnim * 4);
+    ctx.stroke();
+
+    // Antennae
+    const antennaWiggle = Math.sin(now / 180 + phase) * 3;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ex - 2, ey - r * 1.1);
+    ctx.lineTo(ex - 7 + antennaWiggle, ey - r * 1.1 - 8);
+    ctx.moveTo(ex + 2, ey - r * 1.1);
+    ctx.lineTo(ex + 7 - antennaWiggle, ey - r * 1.1 - 8);
+    ctx.stroke();
+
+    // Eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(ex - 3, ey - 2, 2, 0, Math.PI * 2);
+    ctx.arc(ex + 3, ey - 2, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(ex - 3, ey - 2, 1, 0, Math.PI * 2);
+    ctx.arc(ex + 3, ey - 2, 1, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // Body segment - oval with tiny legs
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, r * 1.0, r * 0.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Segment stripe
+    ctx.fillStyle = isSlow ? '#6688aa' : '#774411';
+    ctx.beginPath();
+    ctx.ellipse(ex, ey, r * 0.6, r * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tiny legs
+    const segGait = Math.sin(now / 150 + (enemy.segmentIndex || 0) * 1.0 + phase) * 2;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ex - r, ey);
+    ctx.lineTo(ex - r - 4, ey + 3 + segGait);
+    ctx.moveTo(ex + r, ey);
+    ctx.lineTo(ex + r + 4, ey + 3 - segGait);
+    ctx.stroke();
+  }
+}
+
+function drawParticles(ctx, particles) {
+  for (const p of particles) {
+    const alpha = Math.max(0, p.life / p.maxLife);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawProjectiles(ctx, projectiles, enemies) {

@@ -8,6 +8,7 @@ function applyArmor(damage, armor, armorPierce) {
 export function updateEnemies(enemies, dt) {
   const reached = [];
   const alive = [];
+  const dotKills = [];
   const now = performance.now();
 
   for (const enemy of enemies) {
@@ -16,13 +17,13 @@ export function updateEnemies(enemies, dt) {
     // Poison damage over time
     if (enemy.poisonUntil && enemy.poisonUntil > now && enemy.poisonDps) {
       enemy.hp -= applyArmor(enemy.poisonDps * dt, (enemy.armor || 0) * dt);
-      if (enemy.hp <= 0) continue;
+      if (enemy.hp <= 0) { dotKills.push(enemy); continue; }
     }
 
     // Burn damage over time (separate from poison)
     if (enemy.burnUntil && enemy.burnUntil > now && enemy.burnDps) {
       enemy.hp -= applyArmor(enemy.burnDps * dt, (enemy.armor || 0) * dt);
-      if (enemy.hp <= 0) continue;
+      if (enemy.hp <= 0) { dotKills.push(enemy); continue; }
     }
 
     let speed = enemy.baseSpeed;
@@ -70,7 +71,7 @@ export function updateEnemies(enemies, dt) {
     alive.push(enemy);
   }
 
-  return { alive, reached };
+  return { alive, reached, dotKills };
 }
 
 // Compute aura buffs for a tower from nearby support towers
@@ -204,6 +205,12 @@ export function updateProjectiles(projectiles, enemies, dt) {
     const move = proj.speed * CELL_SIZE * dt;
 
     if (move >= dist) {
+      // Evasion check (firefly)
+      if (target.evasionChance && Math.random() < target.evasionChance) {
+        // Dodged — projectile consumed, no damage
+        continue;
+      }
+
       // Hit!
       let damage = proj.tower.damage;
 
@@ -395,4 +402,48 @@ export function updateProjectiles(projectiles, enemies, dt) {
   }
 
   return { alive, kills };
+}
+
+const ENEMY_COLORS = {
+  ant: '#884422',
+  beetle: '#336633',
+  spider: '#444444',
+  firefly: '#ccaa00',
+  brood_spider: '#553344',
+  spiderling: '#999988',
+  centipede: '#995522',
+};
+
+export function spawnDeathParticles(particles, x, y, typeId) {
+  const color = ENEMY_COLORS[typeId] || '#884422';
+  const count = 8 + Math.floor(Math.random() * 5);
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 30 + Math.random() * 60;
+    particles.push({
+      x,
+      y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.4 + Math.random() * 0.3,
+      maxLife: 0.7,
+      color,
+      size: 1.5 + Math.random() * 2,
+    });
+  }
+  // Cap particles to prevent performance issues
+  if (particles.length > 150) {
+    particles.splice(0, particles.length - 150);
+  }
+}
+
+export function updateParticles(particles, dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 80 * dt; // gravity
+    p.life -= dt;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
 }

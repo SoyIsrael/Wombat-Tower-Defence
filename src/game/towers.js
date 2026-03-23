@@ -2,9 +2,9 @@ export const TOWER_TYPES = {
   shooter: {
     id: 'shooter',
     name: 'Shooter',
-    cost: 30,
+    cost: 35,
     range: 3,
-    damage: 20,
+    damage: 15,
     cooldown: 800,
     color: '#8B6914',
     accent: '#c4952a',
@@ -15,7 +15,7 @@ export const TOWER_TYPES = {
   slow: {
     id: 'slow',
     name: 'Freezer',
-    cost: 40,
+    cost: 45,
     range: 2.5,
     damage: 5,
     cooldown: 1200,
@@ -30,7 +30,7 @@ export const TOWER_TYPES = {
   splash: {
     id: 'splash',
     name: 'Splash',
-    cost: 60,
+    cost: 70,
     range: 2.5,
     damage: 30,
     splashRadius: 1.5,

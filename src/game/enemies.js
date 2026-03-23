@@ -26,6 +26,17 @@ export const ENEMY_TYPES = {
     minWave: 5,
     armor: 0,
   },
+  firefly: {
+    id: 'firefly',
+    name: 'Firefly',
+    baseHp: 35,
+    baseSpeed: 2.8,
+    color: '#ccaa00',
+    minWave: 6,
+    armor: 0,
+    baseType: 'firefly',
+    evasionChance: 0.25,
+  },
   armored_ant: {
     id: 'armored_ant',
     name: 'Armored Ant',
@@ -36,6 +47,27 @@ export const ENEMY_TYPES = {
     armor: 8,
     baseType: 'ant',
   },
+  brood_spider: {
+    id: 'brood_spider',
+    name: 'Brood Spider',
+    baseHp: 130,
+    baseSpeed: 1.6,
+    color: '#553344',
+    minWave: 8,
+    armor: 3,
+    baseType: 'brood_spider',
+    spawnsOnDeath: { typeId: 'spiderling', count: [3, 4] },
+  },
+  spiderling: {
+    id: 'spiderling',
+    name: 'Spiderling',
+    baseHp: 15,
+    baseSpeed: 3.5,
+    color: '#999988',
+    minWave: 99, // never spawned directly
+    armor: 0,
+    baseType: 'spiderling',
+  },
   armored_beetle: {
     id: 'armored_beetle',
     name: 'Armored Beetle',
@@ -45,6 +77,17 @@ export const ENEMY_TYPES = {
     minWave: 9,
     armor: 15,
     baseType: 'beetle',
+  },
+  centipede: {
+    id: 'centipede',
+    name: 'Centipede',
+    baseHp: 60,
+    baseSpeed: 1.4,
+    color: '#995522',
+    minWave: 10,
+    armor: 2,
+    baseType: 'centipede',
+    segmentCount: 5,
   },
   armored_spider: {
     id: 'armored_spider',
@@ -64,8 +107,8 @@ export function getEnemyTypesForWave(wave) {
 
 export function createEnemy(wave, path, typeId = 'ant') {
   const type = ENEMY_TYPES[typeId] || ENEMY_TYPES.ant;
-  const hpScale = 1 + wave * 0.35;
-  const speedScale = 1 + wave * 0.05;
+  const hpScale = 1 + wave * 0.5;
+  const speedScale = 1 + wave * 0.07;
   const hp = Math.round(type.baseHp * hpScale);
 
   return {
@@ -83,11 +126,32 @@ export function createEnemy(wave, path, typeId = 'ant') {
     pathIndex: 0,
     path,
     slowUntil: 0,
+    animPhase: Math.random() * Math.PI * 2,
+    evasionChance: type.evasionChance || 0,
+    spawnsOnDeath: type.spawnsOnDeath || null,
   };
 }
 
+// Create a centipede as an array of linked segment enemies
+export function createCentipede(wave, path) {
+  const type = ENEMY_TYPES.centipede;
+  const count = type.segmentCount || 5;
+  const groupId = `centi-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const segments = [];
+
+  for (let i = 0; i < count; i++) {
+    const enemy = createEnemy(wave, path, 'centipede');
+    enemy.centipedeGroupId = groupId;
+    enemy.segmentIndex = i;
+    enemy.isSegment = i > 0;
+    segments.push(enemy);
+  }
+
+  return segments;
+}
+
 export function getEnemyCountForWave(wave) {
-  return 5 + wave * 3;
+  return 6 + wave * 4;
 }
 
 export function getSpawnInterval(wave) {

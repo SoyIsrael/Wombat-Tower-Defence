@@ -2,9 +2,9 @@ import { useRef, useCallback, useEffect, useState } from 'react';
 import { COLS, ROWS, CELL_SIZE, STARTING_GOLD, STARTING_LIVES } from '../game/constants.js';
 import { TOWER_TYPES, createTower, SELL_REFUND } from '../game/towers.js';
 import { canUpgradePath, getUpgradeCost, applyUpgrades } from '../game/upgrades.js';
-import { createEnemy, getEnemyCountForWave, getSpawnInterval, getEnemyTypesForWave } from '../game/enemies.js';
+import { createEnemy, createCentipede, getEnemyCountForWave, getSpawnInterval, getEnemyTypesForWave } from '../game/enemies.js';
 import { computePaths, wouldBlockPath, tracePathFrom } from '../game/pathfinding.js';
-import { updateEnemies, updateTowers, updateProjectiles } from '../game/gameLogic.js';
+import { updateEnemies, updateTowers, updateProjectiles, spawnDeathParticles, updateParticles } from '../game/gameLogic.js';
 import { render } from '../game/renderer.js';
 import { MAPS, getMapBlockedSet, getWaterSet, getWallSet } from '../game/maps.js';
 
@@ -31,6 +31,7 @@ export function useGameLoop(canvasRef, settings) {
     towers: [],
     enemies: [],
     projectiles: [],
+    particles: [],
     towerBlockedSet: new Set(),
     paths: null,
     prevGrid: null,
@@ -227,6 +228,7 @@ export function useGameLoop(canvasRef, settings) {
     s.towerBlockedSet = new Set();
     s.waveActive = false;
     s.waveEnemiesLeft = 0;
+    s.particles = [];
     s.gameOver = false;
     s.selectedTowerId = null;
     s.inspectedTowerId = null;
@@ -258,9 +260,16 @@ export function useGameLoop(canvasRef, settings) {
           if (path) {
             const types = getEnemyTypesForWave(s.wave);
             const type = types[Math.floor(Math.random() * types.length)];
-            const enemy = createEnemy(s.wave, [...path], type.id);
-            s.enemies.push(enemy);
-            s.waveEnemiesLeft--;
+            if (type.segmentCount) {
+              // Centipede: spawn all segments at once
+              const segments = createCentipede(s.wave, [...path]);
+              s.enemies.push(...segments);
+              s.waveEnemiesLeft--;
+            } else {
+              const enemy = createEnemy(s.wave, [...path], type.id);
+              s.enemies.push(enemy);
+              s.waveEnemiesLeft--;
+            }
             s.lastSpawn = now;
           }
         }
@@ -273,8 +282,27 @@ export function useGameLoop(canvasRef, settings) {
         }
 
         // Update enemies
-        const { alive, reached } = updateEnemies(s.enemies, dt);
+        const { alive, reached, dotKills } = updateEnemies(s.enemies, dt);
         s.enemies = alive;
+        // Handle DOT kills (poison/burn) — particles + spawn-on-death
+        if (dotKills.length > 0) {
+          for (const killed of dotKills) {
+            spawnDeathParticles(s.particles, killed.x * CELL_SIZE, killed.y * CELL_SIZE, killed.baseType || killed.typeId);
+            if (killed.spawnsOnDeath) {
+              const { typeId: childType, count } = killed.spawnsOnDeath;
+              const childCount = count[0] + Math.floor(Math.random() * (count[1] - count[0] + 1));
+              const remainingPath = killed.path.slice(Math.max(0, killed.pathIndex));
+              if (remainingPath.length > 0) {
+                for (let ci = 0; ci < childCount; ci++) {
+                  const child = createEnemy(s.wave, [...remainingPath], childType);
+                  child.x = killed.x + (Math.random() - 0.5) * 0.4;
+                  child.y = killed.y + (Math.random() - 0.5) * 0.4;
+                  s.enemies.push(child);
+                }
+              }
+            }
+          }
+        }
         if (reached.length > 0) {
           s.lives -= reached.length;
           setLives(s.lives);
@@ -299,8 +327,29 @@ export function useGameLoop(canvasRef, settings) {
         if (projResult.kills.length > 0) {
           for (const killed of projResult.kills) {
             s.enemies = s.enemies.filter(e => e.id !== killed.id);
+
+            // Death particles
+            spawnDeathParticles(s.particles, killed.x * CELL_SIZE, killed.y * CELL_SIZE, killed.baseType || killed.typeId);
+
+            // Spawn-on-death (brood spider)
+            if (killed.spawnsOnDeath) {
+              const { typeId: childType, count } = killed.spawnsOnDeath;
+              const childCount = count[0] + Math.floor(Math.random() * (count[1] - count[0] + 1));
+              const remainingPath = killed.path.slice(Math.max(0, killed.pathIndex));
+              if (remainingPath.length > 0) {
+                for (let ci = 0; ci < childCount; ci++) {
+                  const child = createEnemy(s.wave, [...remainingPath], childType);
+                  child.x = killed.x + (Math.random() - 0.5) * 0.4;
+                  child.y = killed.y + (Math.random() - 0.5) * 0.4;
+                  s.enemies.push(child);
+                }
+              }
+            }
           }
         }
+
+        // Update particles
+        updateParticles(s.particles, dt);
       }
 
       // Render
@@ -346,6 +395,7 @@ export function useGameLoop(canvasRef, settings) {
           wouldBlock: wouldBlockVal,
           background: settingsRef.current.background,
           inspectedTowerId: s.inspectedTowerId,
+          particles: s.particles,
         });
       }
 
