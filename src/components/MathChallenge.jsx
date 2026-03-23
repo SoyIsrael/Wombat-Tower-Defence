@@ -22,6 +22,8 @@ export default function MathChallenge({ wave, onComplete, settings }) {
   const numRef = useRef(null);
   const pausedRef = useRef(false);
   const resultsRef = useRef([]);
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const whiteboardRef = useRef(null);
 
   useEffect(() => {
     if (numRef.current) numRef.current.focus();
@@ -145,9 +147,6 @@ export default function MathChallenge({ wave, onComplete, settings }) {
 
   const timerUrgent = timerDuration > 0 && timeLeft <= 5;
   const timerWarning = timerDuration > 0 && timeLeft <= 15 && !timerUrgent;
-
-  const [showWhiteboard, setShowWhiteboard] = useState(false);
-  const whiteboardRef = useRef(null);
 
   return (
     <div className="fixed inset-0 bg-black/85 flex items-center justify-center z-[90]">
