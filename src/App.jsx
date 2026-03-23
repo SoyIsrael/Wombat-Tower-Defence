@@ -248,7 +248,7 @@ function GameView({ settings, onReturnToTitle }) {
       </div>
 
       {/* Main area */}
-      <div className="flex flex-1 min-h-0 overflow-auto max-md:flex-col">
+      <div className="flex flex-1 min-h-0 overflow-auto max-md:flex-col max-md:overflow-hidden">
         {/* Game board */}
         <div className="flex-1 flex items-center justify-center p-2 min-w-0 max-md:flex-none max-md:p-1">
           <canvas

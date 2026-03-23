@@ -54,3 +54,8 @@ input[type='number']::-webkit-outer-spin-button {
 input[type='number'] {
   -moz-appearance: textfield;
 }
+
+/* Prevent touch scroll/zoom delays on interactive elements */
+button, input, select {
+  touch-action: manipulation;
+}
