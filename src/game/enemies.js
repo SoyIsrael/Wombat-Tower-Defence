@@ -117,8 +117,8 @@ export function getEnemyTypesForWave(wave) {
 
 export function createEnemy(wave, path, typeId = "ant") {
   const type = ENEMY_TYPES[typeId] || ENEMY_TYPES.ant;
-  const hpScale = 1 + wave * 0.4;
-  const speedScale = 1 + wave * 0.07;
+  const hpScale = 1 + wave * 0.43;
+  const speedScale = 1 + wave * 0.075;
   const hp = Math.round(type.baseHp * hpScale);
 
   return {
