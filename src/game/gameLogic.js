@@ -35,10 +35,7 @@ export function updateEnemies(enemies, dt) {
       speed *= enemy.currentSlowFactor || 0.4;
     }
 
-    // Burn slow
-    if (enemy.burnSlowUntil && enemy.burnSlowUntil > now) {
-      speed *= enemy.burnSlowFactor || 1;
-    }
+    // (burn slow removed — burn no longer slows)
 
     enemy.speed = speed;
 
@@ -217,6 +214,17 @@ export function updateProjectiles(projectiles, enemies, dt) {
       // Aura damage bonus
       damage = Math.round(damage * (proj.auraDamageMult || 1));
 
+      // Vulnerability mark bonus (sniper bottom path) — all towers deal more to marked targets
+      if (target.markDamageBonus && target.markUntil > performance.now()) {
+        damage = Math.round(damage * target.markDamageBonus);
+      }
+
+      // Shock bonus (zapper bottom path) — consume stored shock for extra damage
+      if (target.shockBonus && target.shockBonus > 0) {
+        damage += target.shockBonus;
+        target.shockBonus = 0;
+      }
+
       // Crit chance
       if (proj.tower.critChance && Math.random() < proj.tower.critChance) {
         damage = Math.round(damage * (proj.tower.critMultiplier || 2));
@@ -259,6 +267,23 @@ export function updateProjectiles(projectiles, enemies, dt) {
         target.stunUntil = performance.now() + (proj.tower.stunDuration || 1000);
       }
 
+      // Vulnerability mark (sniper bottom path)
+      if (proj.tower.markDamageBonus) {
+        target.markDamageBonus = proj.tower.markDamageBonus;
+        target.markUntil = performance.now() + (proj.tower.markDuration || 3000);
+      }
+
+      // Knockback (fortress middle path)
+      if (proj.tower.knockback && target.path) {
+        const kb = proj.tower.knockback;
+        target.pathIndex = Math.max(0, target.pathIndex - Math.round(kb));
+        const dest = target.path[target.pathIndex];
+        if (dest) {
+          target.x = dest.col + 0.5;
+          target.y = dest.row + 0.5;
+        }
+      }
+
       // Poison effect
       if (proj.tower.poisonDps) {
         target.poisonUntil = performance.now() + (proj.tower.poisonDuration || 3000);
@@ -269,10 +294,7 @@ export function updateProjectiles(projectiles, enemies, dt) {
       if (proj.tower.burnDps) {
         target.burnUntil = performance.now() + (proj.tower.burnDuration || 2000);
         target.burnDps = proj.tower.burnDps;
-        if (proj.tower.burnSlowFactor) {
-          target.burnSlowUntil = target.burnUntil;
-          target.burnSlowFactor = proj.tower.burnSlowFactor;
-        }
+        target.burnSpread = proj.tower.burnSpread || false;
       }
 
       // Brittle mark
@@ -295,6 +317,11 @@ export function updateProjectiles(projectiles, enemies, dt) {
             if (enemy.brittleBonus && enemy.brittleUntil > performance.now()) {
               splashDmg += enemy.brittleBonus;
             }
+            // Shock bonus on splash targets
+            if (enemy.shockBonus && enemy.shockBonus > 0) {
+              splashDmg += enemy.shockBonus;
+              enemy.shockBonus = 0;
+            }
             enemy.hp -= applyArmor(splashDmg, enemy.armor, proj.tower.armorPierce);
             // Propagate slow to splashed enemies
             if (proj.tower.slowFactor) {
@@ -310,9 +337,16 @@ export function updateProjectiles(projectiles, enemies, dt) {
             if (proj.tower.burnDps) {
               enemy.burnUntil = performance.now() + (proj.tower.burnDuration || 2000);
               enemy.burnDps = proj.tower.burnDps;
-              if (proj.tower.burnSlowFactor) {
-                enemy.burnSlowUntil = enemy.burnUntil;
-                enemy.burnSlowFactor = proj.tower.burnSlowFactor;
+              target.burnSpread = proj.tower.burnSpread || false;
+            }
+            // Knockback on splash targets
+            if (proj.tower.knockback && enemy.path) {
+              const kb = proj.tower.knockback * 0.5; // half knockback on splash
+              enemy.pathIndex = Math.max(0, enemy.pathIndex - Math.round(kb));
+              const dest = enemy.path[enemy.pathIndex];
+              if (dest) {
+                enemy.x = dest.col + 0.5;
+                enemy.y = dest.row + 0.5;
               }
             }
             // Stun on splash
@@ -353,13 +387,22 @@ export function updateProjectiles(projectiles, enemies, dt) {
           if (nextTarget.brittleBonus && nextTarget.brittleUntil > performance.now()) {
             finalChainDmg += nextTarget.brittleBonus;
           }
+          // Shock bonus on chain targets
+          if (nextTarget.shockBonus && nextTarget.shockBonus > 0) {
+            finalChainDmg += nextTarget.shockBonus;
+            nextTarget.shockBonus = 0;
+          }
           nextTarget.hp -= applyArmor(finalChainDmg, nextTarget.armor, proj.tower.armorPierce);
           hitSet.add(nextTarget.id);
 
-          // Chain slow
-          if (proj.tower.chainSlowFactor) {
-            nextTarget.slowUntil = performance.now() + (proj.tower.chainSlowDuration || 1000);
-            nextTarget.currentSlowFactor = proj.tower.chainSlowFactor;
+          // Chain shock (zapper bottom path) — apply shock to chained enemies
+          if (proj.tower.chainShockBonus) {
+            nextTarget.shockBonus = proj.tower.chainShockBonus;
+          }
+
+          // Chain armor shred (tesla bottom path) — permanently reduce armor
+          if (proj.tower.chainArmorShred) {
+            nextTarget.armor = Math.max(0, nextTarget.armor - proj.tower.chainArmorShred);
           }
 
           // Chain stun
@@ -384,10 +427,7 @@ export function updateProjectiles(projectiles, enemies, dt) {
       }
 
       // Apply brittle bonus to primary target damage (after initial hit calc)
-      // Actually re-check: brittle adds flat damage from ALL sources
-      // We apply brittle BEFORE armor on the primary hit too
       if (target.brittleBonus && target.brittleUntil > performance.now() && !proj.tower.brittleBonus) {
-        // Other towers deal bonus damage to brittle targets
         target.hp -= target.brittleBonus;
       }
 

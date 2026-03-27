@@ -114,5 +114,5 @@ export function getProblemsPerWave() {
 }
 
 export function getGoldPerCorrect(wave) {
-  return 20 + Math.floor(wave * 5);
+  return 25 + Math.floor(wave * 7);
 }

@@ -141,6 +141,10 @@ export function useGameLoop(canvasRef, settings) {
     }
 
     s.gold -= def.cost;
+    // Miner placement bonus: refund 10 gold immediately
+    if (s.selectedTowerId === 'money') {
+      s.gold += 10;
+    }
     setGold(s.gold);
   }, [map, mapBlockedSet, waterSet, wallSet]);
 
@@ -284,9 +288,10 @@ export function useGameLoop(canvasRef, settings) {
         // Update enemies
         const { alive, reached, dotKills } = updateEnemies(s.enemies, dt);
         s.enemies = alive;
-        // Handle DOT kills (poison/burn) — particles + spawn-on-death
+        // Handle DOT kills (poison/burn) — particles + spawn-on-death + bounty
         if (dotKills.length > 0) {
           for (const killed of dotKills) {
+            s.gold += killed.bounty || 2;
             spawnDeathParticles(s.particles, killed.x * CELL_SIZE, killed.y * CELL_SIZE, killed.baseType || killed.typeId);
             if (killed.spawnsOnDeath) {
               const { typeId: childType, count } = killed.spawnsOnDeath;
@@ -301,10 +306,33 @@ export function useGameLoop(canvasRef, settings) {
                 }
               }
             }
+            // Burn spread on death (splash bottom T4)
+            if (killed.burnSpread && killed.burnDps) {
+              for (const enemy of s.enemies) {
+                if (enemy.hp <= 0) continue;
+                const bdx = enemy.x - killed.x;
+                const bdy = enemy.y - killed.y;
+                if (Math.sqrt(bdx * bdx + bdy * bdy) <= 1.5) {
+                  enemy.burnUntil = performance.now() + 3000;
+                  enemy.burnDps = killed.burnDps;
+                  enemy.burnSpread = true;
+                }
+              }
+            }
           }
+          setGold(s.gold);
         }
         if (reached.length > 0) {
-          s.lives -= reached.length;
+          let livesLost = 0;
+          for (const enemy of reached) {
+            if (enemy.spawnsOnDeath) {
+              const [min, max] = enemy.spawnsOnDeath.count;
+              livesLost += min + Math.floor(Math.random() * (max - min + 1));
+            } else {
+              livesLost += 1;
+            }
+          }
+          s.lives -= livesLost;
           setLives(s.lives);
           if (s.lives <= 0) {
             s.lives = 0;
@@ -327,6 +355,7 @@ export function useGameLoop(canvasRef, settings) {
         if (projResult.kills.length > 0) {
           for (const killed of projResult.kills) {
             s.enemies = s.enemies.filter(e => e.id !== killed.id);
+            s.gold += killed.bounty || 2;
 
             // Death particles
             spawnDeathParticles(s.particles, killed.x * CELL_SIZE, killed.y * CELL_SIZE, killed.baseType || killed.typeId);
@@ -345,7 +374,21 @@ export function useGameLoop(canvasRef, settings) {
                 }
               }
             }
+            // Burn spread on death (splash bottom T4)
+            if (killed.burnSpread && killed.burnDps) {
+              for (const enemy of s.enemies) {
+                if (enemy.hp <= 0) continue;
+                const bdx = enemy.x - killed.x;
+                const bdy = enemy.y - killed.y;
+                if (Math.sqrt(bdx * bdx + bdy * bdy) <= 1.5) {
+                  enemy.burnUntil = performance.now() + 3000;
+                  enemy.burnDps = killed.burnDps;
+                  enemy.burnSpread = true;
+                }
+              }
+            }
           }
+          setGold(s.gold);
         }
 
         // Update particles

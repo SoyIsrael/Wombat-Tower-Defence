@@ -88,13 +88,13 @@ export const TOWER_TYPES = {
   money: {
     id: 'money',
     name: 'Miner',
-    cost: 75,
+    cost: 60,
     range: 0,
     damage: 0,
     cooldown: 0,
     color: '#ffd700',
     accent: '#ffee88',
-    desc: '+8 gold every 5s',
+    desc: '+8 gold every 4s',
   },
   water: {
     id: 'water',

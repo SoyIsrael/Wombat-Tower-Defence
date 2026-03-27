@@ -8,10 +8,10 @@ export const TOWER_UPGRADES = {
   // ─── SHOOTER ───
   shooter: {
     top: [
-      { name: 'Sharp Rounds', desc: '+10 dmg', cost: 75, effects: { damage: 30 } },
+      { name: 'Sharp Rounds', desc: '+20 dmg', cost: 75, effects: { damage: 35 } },
       { name: 'Piercing Tips', desc: '+25 dmg, pierces armor', cost: 180, effects: { damage: 45, armorPierce: 5 } },
-      { name: 'Depleted Uranium', desc: 'Huge dmg, shreds armor', cost: 500, effects: { damage: 80, armorPierce: 12 } },
-      { name: 'Railgun Wombat', desc: 'Devastating shots', cost: 1400, effects: { damage: 150, armorPierce: 25, projectileSpeed: 20 } },
+      { name: 'Depleted Uranium', desc: 'Huge dmg, shreds armor', cost: 500, effects: { damage: 95, armorPierce: 12 } },
+      { name: 'Railgun Wombat', desc: 'Devastating shots', cost: 1400, effects: { damage: 180, armorPierce: 25, projectileSpeed: 20 } },
     ],
     middle: [
       { name: 'Quick Paws', desc: 'Faster attacks', cost: 60, effects: { cooldown: 650 } },
@@ -43,9 +43,9 @@ export const TOWER_UPGRADES = {
     ],
     bottom: [
       { name: 'Icy Touch', desc: 'More dmg', cost: 60, effects: { damage: 8 } },
-      { name: 'Frostbite', desc: 'Enemies take +5 from all', cost: 150, effects: { damage: 12, brittleBonus: 5 } },
-      { name: 'Shatter Mark', desc: '+10 bonus dmg to marked', cost: 450, effects: { damage: 18, brittleBonus: 10, slowDuration: 3000 } },
-      { name: 'Cryo Catalyst', desc: '+20 bonus dmg, +range', cost: 1300, effects: { damage: 25, brittleBonus: 20, range: 3.5 } },
+      { name: 'Frostbite', desc: 'Enemies take +8 from all', cost: 150, effects: { damage: 12, brittleBonus: 8 } },
+      { name: 'Shatter Mark', desc: '+15 bonus dmg to marked', cost: 450, effects: { damage: 18, brittleBonus: 15, slowDuration: 3000 } },
+      { name: 'Cryo Catalyst', desc: '+25 bonus dmg, +range', cost: 1300, effects: { damage: 25, brittleBonus: 25, range: 3.5 } },
     ],
   },
 
@@ -67,7 +67,7 @@ export const TOWER_UPGRADES = {
       { name: 'Heated Shells', desc: 'Burn: 5 dps/2s', cost: 80, effects: { burnDps: 5, burnDuration: 2000 } },
       { name: 'Napalm Rounds', desc: 'Burn: 10 dps/3s', cost: 200, effects: { burnDps: 10, burnDuration: 3000 } },
       { name: 'Scorched Earth', desc: 'Burn: 18 dps/4s, AOE', cost: 600, effects: { burnDps: 18, burnDuration: 4000 } },
-      { name: 'Hellfire', desc: 'Burn: 30 dps/5s + slow', cost: 1700, effects: { burnDps: 30, burnDuration: 5000, burnSlowFactor: 0.5 } },
+      { name: 'Hellfire', desc: 'Burn: 30 dps/5s, spreads', cost: 1700, effects: { burnDps: 30, burnDuration: 5000, burnSpread: true } },
     ],
   },
 
@@ -86,10 +86,10 @@ export const TOWER_UPGRADES = {
       { name: 'Elite Sniper', desc: 'Targets strongest', cost: 2200, effects: { cooldown: 600, range: 8, targetStrongest: true } },
     ],
     bottom: [
-      { name: 'Slow Rounds', desc: 'Slows targets', cost: 90, effects: { slowFactor: 0.5, slowDuration: 1500 } },
-      { name: 'Crippling Shot', desc: 'Strong slow', cost: 200, effects: { slowFactor: 0.3, slowDuration: 2500 } },
-      { name: 'Maim', desc: 'Cripples enemies', cost: 600, effects: { slowFactor: 0.2, slowDuration: 3500 } },
-      { name: 'Executioner', desc: '3x dmg below 30% hp', cost: 1800, effects: { slowFactor: 0.15, slowDuration: 4000, executeDamageBonus: 3.0 } },
+      { name: 'Spotter Rounds', desc: 'Marks: +10% dmg taken', cost: 90, effects: { markDamageBonus: 1.10, markDuration: 3000 } },
+      { name: 'Expose Weakness', desc: 'Mark: +20% dmg taken', cost: 200, effects: { markDamageBonus: 1.20, markDuration: 4000 } },
+      { name: "Hunter's Mark", desc: 'Mark: +30% dmg taken', cost: 600, effects: { markDamageBonus: 1.30, markDuration: 5000 } },
+      { name: 'Executioner', desc: '+30% mark, 3x <30% hp', cost: 1800, effects: { markDamageBonus: 1.30, markDuration: 5000, executeDamageBonus: 3.0 } },
     ],
   },
 
@@ -104,14 +104,14 @@ export const TOWER_UPGRADES = {
     middle: [
       { name: 'High Voltage', desc: '+10 dmg', cost: 90, effects: { damage: 40 } },
       { name: 'Surge', desc: 'More dmg, faster', cost: 225, effects: { damage: 55, cooldown: 750 } },
-      { name: 'Megavolt', desc: 'Heavy hits, fast', cost: 650, effects: { damage: 80, cooldown: 600 } },
-      { name: 'Gigawatt', desc: 'Extreme voltage', cost: 1900, effects: { damage: 120, cooldown: 400, range: 3.5 } },
+      { name: 'Megavolt', desc: 'Heavy hits, fast', cost: 650, effects: { damage: 90, cooldown: 600 } },
+      { name: 'Gigawatt', desc: 'Extreme voltage', cost: 1900, effects: { damage: 140, cooldown: 400, range: 3.5 } },
     ],
     bottom: [
-      { name: 'Static Charge', desc: 'Chains slow', cost: 80, effects: { chainSlowFactor: 0.6, chainSlowDuration: 1000 } },
-      { name: 'EMP Pulse', desc: 'Stronger chain slow', cost: 200, effects: { chainSlowFactor: 0.4, chainSlowDuration: 1500 } },
-      { name: 'Disruption Field', desc: 'AOE dmg aura', cost: 600, effects: { chainSlowFactor: 0.3, chainSlowDuration: 2000, auraDps: 5, auraRange: 2.0 } },
-      { name: 'Tesla Dome', desc: 'Massive aura', cost: 1800, effects: { chainSlowFactor: 0.2, chainSlowDuration: 3000, auraDps: 15, auraRange: 3.0 } },
+      { name: 'Static Charge', desc: 'Chains shock: +8 next hit', cost: 80, effects: { chainShockBonus: 8 } },
+      { name: 'EMP Pulse', desc: 'Shock: +15 next hit', cost: 200, effects: { chainShockBonus: 15 } },
+      { name: 'Disruption Field', desc: 'Shock +20, dmg aura', cost: 600, effects: { chainShockBonus: 20, auraDps: 5, auraRange: 2.0 } },
+      { name: 'Tesla Dome', desc: 'Shock +30, massive aura', cost: 1800, effects: { chainShockBonus: 30, auraDps: 15, auraRange: 3.0 } },
     ],
   },
 
@@ -120,8 +120,8 @@ export const TOWER_UPGRADES = {
     top: [
       { name: 'Potent Venom', desc: 'Stronger poison', cost: 80, effects: { poisonDps: 15, poisonDuration: 3500 } },
       { name: 'Corrosive Acid', desc: '25 dps/4s', cost: 200, effects: { poisonDps: 25, poisonDuration: 4000 } },
-      { name: 'Necrosis', desc: '40 dps, strips armor', cost: 550, effects: { poisonDps: 40, poisonDuration: 5000, armorPierce: 5 } },
-      { name: 'Plague Bearer', desc: '60 dps, spreads', cost: 1600, effects: { poisonDps: 60, poisonDuration: 6000, armorPierce: 15 } },
+      { name: 'Necrosis', desc: '50 dps, strips armor', cost: 550, effects: { poisonDps: 50, poisonDuration: 5000, armorPierce: 5 } },
+      { name: 'Plague Bearer', desc: '80 dps, spreads', cost: 1600, effects: { poisonDps: 80, poisonDuration: 6000, armorPierce: 15 } },
     ],
     middle: [
       { name: 'Quick Spit', desc: 'Faster, more dmg', cost: 70, effects: { cooldown: 700, damage: 12 } },
@@ -140,14 +140,14 @@ export const TOWER_UPGRADES = {
   // ─── MINER ───
   money: {
     top: [
-      { name: 'Better Pickaxe', desc: '+4g per tick', cost: 100, effects: { moneyAmount: 12 } },
-      { name: 'Gold Vein', desc: '+10g per tick', cost: 275, effects: { moneyAmount: 18 } },
+      { name: 'Better Pickaxe', desc: '+4g per tick', cost: 75, effects: { moneyAmount: 12 } },
+      { name: 'Gold Vein', desc: '+10g per tick', cost: 200, effects: { moneyAmount: 18 } },
       { name: 'Motherlode', desc: '+22g per tick', cost: 750, effects: { moneyAmount: 30 } },
       { name: 'El Dorado', desc: '+42g per tick', cost: 2200, effects: { moneyAmount: 50 } },
     ],
     middle: [
-      { name: 'Faster Digging', desc: 'Every 4s', cost: 80, effects: { moneyInterval: 4000 } },
-      { name: 'Power Tools', desc: 'Every 3s', cost: 225, effects: { moneyInterval: 3000 } },
+      { name: 'Faster Digging', desc: 'Every 3s', cost: 60, effects: { moneyInterval: 3000 } },
+      { name: 'Power Tools', desc: 'Every 2.5s', cost: 175, effects: { moneyInterval: 2500 } },
       { name: 'Drilling Rig', desc: 'Every 2s', cost: 650, effects: { moneyInterval: 2000 } },
       { name: 'Strip Mine', desc: 'Every 1.2s', cost: 1800, effects: { moneyInterval: 1200 } },
     ],
@@ -185,9 +185,9 @@ export const TOWER_UPGRADES = {
   laser: {
     top: [
       { name: 'Focused Lens', desc: 'More dmg', cost: 200, effects: { damage: 65 } },
-      { name: 'Concentrated Beam', desc: 'Ramps on target', cost: 450, effects: { damage: 85, rampDamage: 5, rampMax: 50 } },
-      { name: 'Plasma Cutter', desc: 'Heavy ramp dmg', cost: 1200, effects: { damage: 110, rampDamage: 10, rampMax: 100 } },
-      { name: 'Death Ray', desc: 'Melts everything', cost: 3500, effects: { damage: 150, rampDamage: 20, rampMax: 250, armorPierce: 20 } },
+      { name: 'Concentrated Beam', desc: 'Ramps on target', cost: 450, effects: { damage: 85, rampDamage: 5, rampMax: 65 } },
+      { name: 'Plasma Cutter', desc: 'Heavy ramp dmg', cost: 1200, effects: { damage: 110, rampDamage: 10, rampMax: 130 } },
+      { name: 'Death Ray', desc: 'Melts everything', cost: 3500, effects: { damage: 150, rampDamage: 20, rampMax: 300, armorPierce: 20 } },
     ],
     middle: [
       { name: 'Wide Beam', desc: 'Small splash', cost: 175, effects: { splashRadius: 0.8 } },
@@ -212,10 +212,10 @@ export const TOWER_UPGRADES = {
       { name: 'War Machine', desc: 'Full splash dmg', cost: 4000, effects: { damage: 250, splashRadius: 4.0, splashDamageRatio: 1.0, cooldown: 900 } },
     ],
     middle: [
-      { name: 'Heavy Impact', desc: 'Stronger slow', cost: 250, effects: { slowFactor: 0.2, slowDuration: 2000 } },
-      { name: 'Concussive Blast', desc: '15% stun chance', cost: 550, effects: { slowFactor: 0.15, slowDuration: 2500, stunChance: 0.15, stunDuration: 800 } },
-      { name: 'Earthquake', desc: '25% stun, longer', cost: 1400, effects: { slowFactor: 0.1, slowDuration: 3000, stunChance: 0.25, stunDuration: 1200 } },
-      { name: "Titan's Fist", desc: '40% stun, +range', cost: 3800, effects: { slowFactor: 0.05, slowDuration: 4000, stunChance: 0.4, stunDuration: 2000, range: 3.5 } },
+      { name: 'Heavy Impact', desc: 'Knockback 0.3 cells', cost: 250, effects: { knockback: 0.3 } },
+      { name: 'Concussive Blast', desc: 'KB 0.5, 15% stun', cost: 550, effects: { knockback: 0.5, stunChance: 0.15, stunDuration: 800 } },
+      { name: 'Earthquake', desc: 'KB 0.8, 25% stun', cost: 1400, effects: { knockback: 0.8, stunChance: 0.25, stunDuration: 1200 } },
+      { name: "Titan's Fist", desc: 'KB 1.2, 40% stun', cost: 3800, effects: { knockback: 1.2, stunChance: 0.4, stunDuration: 2000, range: 3.5 } },
     ],
     bottom: [
       { name: 'Watchtower', desc: '+range', cost: 225, effects: { range: 3.5 } },
@@ -240,10 +240,10 @@ export const TOWER_UPGRADES = {
       { name: 'Infinite Energy', desc: 'Extreme speed', cost: 4500, effects: { cooldown: 150, range: 4.5 } },
     ],
     bottom: [
-      { name: 'Magnetic Pulse', desc: 'Chains slow enemies', cost: 275, effects: { chainSlowFactor: 0.5, chainSlowDuration: 1500 } },
-      { name: 'EMP Blast', desc: 'Strong chain slow', cost: 625, effects: { chainSlowFactor: 0.3, chainSlowDuration: 2000, armorPierce: 8 } },
-      { name: 'Ion Storm', desc: '15% stun on chain', cost: 1500, effects: { chainSlowFactor: 0.2, chainSlowDuration: 2500, armorPierce: 15, stunChance: 0.15, stunDuration: 1000 } },
-      { name: 'Singularity', desc: '30% stun, shreds', cost: 4200, effects: { chainSlowFactor: 0.1, chainSlowDuration: 3000, armorPierce: 25, stunChance: 0.3, stunDuration: 1500 } },
+      { name: 'Magnetic Pulse', desc: 'Chains shred -3 armor', cost: 275, effects: { chainArmorShred: 3 } },
+      { name: 'EMP Blast', desc: 'Shred -5, pierce 8', cost: 625, effects: { chainArmorShred: 5, armorPierce: 8 } },
+      { name: 'Ion Storm', desc: 'Shred -8, 15% stun', cost: 1500, effects: { chainArmorShred: 8, armorPierce: 15, stunChance: 0.15, stunDuration: 1000 } },
+      { name: 'Singularity', desc: 'Shred -12, 30% stun', cost: 4200, effects: { chainArmorShred: 12, armorPierce: 25, stunChance: 0.3, stunDuration: 1500 } },
     ],
   },
 };

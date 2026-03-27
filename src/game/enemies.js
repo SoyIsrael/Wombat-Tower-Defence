@@ -7,6 +7,7 @@ export const ENEMY_TYPES = {
     color: '#884422',
     minWave: 1,
     armor: 0,
+    bounty: 2,
   },
   beetle: {
     id: 'beetle',
@@ -16,6 +17,7 @@ export const ENEMY_TYPES = {
     color: '#336633',
     minWave: 3,
     armor: 0,
+    bounty: 4,
   },
   spider: {
     id: 'spider',
@@ -25,6 +27,7 @@ export const ENEMY_TYPES = {
     color: '#444444',
     minWave: 5,
     armor: 0,
+    bounty: 3,
   },
   firefly: {
     id: 'firefly',
@@ -36,6 +39,7 @@ export const ENEMY_TYPES = {
     armor: 0,
     baseType: 'firefly',
     evasionChance: 0.25,
+    bounty: 2,
   },
   armored_ant: {
     id: 'armored_ant',
@@ -46,17 +50,19 @@ export const ENEMY_TYPES = {
     minWave: 7,
     armor: 8,
     baseType: 'ant',
+    bounty: 3,
   },
   brood_spider: {
     id: 'brood_spider',
     name: 'Brood Spider',
-    baseHp: 130,
-    baseSpeed: 1.6,
+    baseHp: 90,
+    baseSpeed: 0.7,
     color: '#553344',
     minWave: 8,
     armor: 3,
     baseType: 'brood_spider',
     spawnsOnDeath: { typeId: 'spiderling', count: [3, 4] },
+    bounty: 5,
   },
   spiderling: {
     id: 'spiderling',
@@ -67,6 +73,7 @@ export const ENEMY_TYPES = {
     minWave: 99, // never spawned directly
     armor: 0,
     baseType: 'spiderling',
+    bounty: 1,
   },
   armored_beetle: {
     id: 'armored_beetle',
@@ -77,6 +84,7 @@ export const ENEMY_TYPES = {
     minWave: 9,
     armor: 15,
     baseType: 'beetle',
+    bounty: 6,
   },
   centipede: {
     id: 'centipede',
@@ -88,6 +96,7 @@ export const ENEMY_TYPES = {
     armor: 2,
     baseType: 'centipede',
     segmentCount: 5,
+    bounty: 3,
   },
   armored_spider: {
     id: 'armored_spider',
@@ -98,6 +107,7 @@ export const ENEMY_TYPES = {
     minWave: 11,
     armor: 10,
     baseType: 'spider',
+    bounty: 4,
   },
 };
 
@@ -107,7 +117,7 @@ export function getEnemyTypesForWave(wave) {
 
 export function createEnemy(wave, path, typeId = 'ant') {
   const type = ENEMY_TYPES[typeId] || ENEMY_TYPES.ant;
-  const hpScale = 1 + wave * 0.5;
+  const hpScale = 1 + wave * 0.4;
   const speedScale = 1 + wave * 0.07;
   const hp = Math.round(type.baseHp * hpScale);
 
@@ -129,6 +139,7 @@ export function createEnemy(wave, path, typeId = 'ant') {
     animPhase: Math.random() * Math.PI * 2,
     evasionChance: type.evasionChance || 0,
     spawnsOnDeath: type.spawnsOnDeath || null,
+    bounty: type.bounty || 2,
   };
 }
 
@@ -151,7 +162,7 @@ export function createCentipede(wave, path) {
 }
 
 export function getEnemyCountForWave(wave) {
-  return 6 + wave * 4;
+  return wave <= 5 ? (4 + wave * 3) : (6 + wave * 4);
 }
 
 export function getSpawnInterval(wave) {
