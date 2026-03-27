@@ -29,23 +29,27 @@ function randFraction(maxDen) {
 }
 
 const OP_MAP = {
-  add: '+',
-  subtract: '-',
-  multiply: '×',
-  divide: '÷',
+  add: "+",
+  subtract: "-",
+  multiply: "×",
+  divide: "÷",
 };
 
-export function generateProblem(wave, difficulty = 'medium', enabledOps = null) {
+export function generateProblem(
+  wave,
+  difficulty = "medium",
+  enabledOps = null,
+) {
   // Determine max denominator from difficulty
   let maxDen;
   switch (difficulty) {
-    case 'easy':
+    case "easy":
       maxDen = Math.min(6, 3 + Math.floor(wave / 3));
       break;
-    case 'hard':
+    case "hard":
       maxDen = Math.min(20, 6 + wave);
       break;
-    case 'medium':
+    case "medium":
     default:
       maxDen = Math.min(12, 4 + Math.floor(wave / 2));
       break;
@@ -58,9 +62,9 @@ export function generateProblem(wave, difficulty = 'medium', enabledOps = null) 
     ops = Object.entries(enabledOps)
       .filter(([, enabled]) => enabled)
       .map(([key]) => OP_MAP[key]);
-    if (ops.length === 0) ops = ['+'];
+    if (ops.length === 0) ops = ["+"];
   } else {
-    ops = ['+', '-', '×', '÷'];
+    ops = ["+", "-", "×", "÷"];
   }
 
   const op = ops[randInt(0, ops.length - 1)];
@@ -68,31 +72,31 @@ export function generateProblem(wave, difficulty = 'medium', enabledOps = null) 
   let a = randFraction(maxDen);
   let b = randFraction(maxDen);
 
-  if (op === '÷' && b.num === 0) {
+  if (op === "÷" && b.num === 0) {
     b.num = 1;
   }
 
   let answer;
   switch (op) {
-    case '+': {
+    case "+": {
       const num = a.num * b.den + b.num * a.den;
       const den = a.den * b.den;
       answer = simplify(num, den);
       break;
     }
-    case '-': {
+    case "-": {
       const num = a.num * b.den - b.num * a.den;
       const den = a.den * b.den;
       answer = simplify(num, den);
       break;
     }
-    case '×': {
+    case "×": {
       const num = a.num * b.num;
       const den = a.den * b.den;
       answer = simplify(num, den);
       break;
     }
-    case '÷': {
+    case "÷": {
       const num = a.num * b.den;
       const den = a.den * b.num;
       answer = simplify(num, den);
@@ -106,7 +110,10 @@ export function generateProblem(wave, difficulty = 'medium', enabledOps = null) 
 export function checkAnswer(problem, userNum, userDen) {
   if (userDen === 0) return false;
   const userSimplified = simplify(userNum, userDen);
-  return userSimplified.num === problem.answer.num && userSimplified.den === problem.answer.den;
+  return (
+    userSimplified.num === problem.answer.num &&
+    userSimplified.den === problem.answer.den
+  );
 }
 
 export function getProblemsPerWave() {
@@ -114,5 +121,5 @@ export function getProblemsPerWave() {
 }
 
 export function getGoldPerCorrect(wave) {
-  return 25 + Math.floor(wave * 7);
+  return 25 + Math.floor(wave * 5);
 }
