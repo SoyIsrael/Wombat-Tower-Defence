@@ -88,7 +88,7 @@ export const TOWER_TYPES = {
   money: {
     id: "money",
     name: "Miner",
-    cost: 60,
+    cost: 90,
     range: 0,
     damage: 0,
     cooldown: 0,

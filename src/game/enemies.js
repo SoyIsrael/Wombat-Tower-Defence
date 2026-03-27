@@ -89,7 +89,7 @@ export const ENEMY_TYPES = {
   centipede: {
     id: "centipede",
     name: "Centipede",
-    baseHp: 60,
+    baseHp: 100,
     baseSpeed: 1.4,
     color: "#995522",
     minWave: 10,
@@ -101,7 +101,7 @@ export const ENEMY_TYPES = {
   armored_spider: {
     id: "armored_spider",
     name: "Armored Spider",
-    baseHp: 130,
+    baseHp: 140,
     baseSpeed: 1.8,
     color: "#444444",
     minWave: 11,
