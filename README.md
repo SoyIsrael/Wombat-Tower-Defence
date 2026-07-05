@@ -1,16 +1,59 @@
-# React + Vite
+# 🐨 Wombat Tower Defence
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A math-based tower defence game built with React + Vite. Defend the wombat burrow by solving fraction problems to earn gold — then spend it on towers to stop the waves of critters.
 
-Currently, two official plugins are available:
+> Built with the help of [Claude](https://claude.ai) (Anthropic's AI assistant) via Claude Code.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Screenshots
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Main Menu
+![Main Menu](public/main-page.png)
 
-## Expanding the ESLint configuration
+Choose your map, set a math timer, pick a difficulty, select operations (addition, subtraction, multiplication, division), and pick a background theme before starting.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Gameplay
+![Gameplay](public/game.png)
+
+Place wombat towers along the path to intercept enemies making their way to the burrow. Multiple enemy types with different speeds and health keep each wave fresh.
+
+### Math Challenge
+![Math Challenge](public/math-problem.png)
+
+When you place a tower or earn gold, a timed fraction challenge pops up. Solve it correctly to earn gold. Faster answers = more reward.
+
+### Tower Upgrades
+![Tower Upgrades](public/wombat-upgrades.png)
+
+Each tower has a unique upgrade tree. Invest gold to boost damage, range, cooldown, and unlock special abilities.
+
+---
+
+## Features
+
+- **6 maps** — Classic, Lakeside, Winding, Convergence, Archipelago, Twin Rivers
+- **Fraction math challenges** — addition, subtraction, multiplication, division with configurable difficulty
+- **Math timer modes** — 30s, 60s, 90s, 120s, or untimed
+- **Multiple enemy types** — each with unique stats and behaviors
+- **Tower upgrade trees** — branch upgrades with distinct abilities per tower
+- **5 background themes** — Classic, Desert, Snow, Dark, Swamp
+
+---
+
+## Tech Stack
+
+- **React** + **Vite**
+- Game loop and state managed in React
+- No external game engine — all rendering is DOM/CSS-based
+
+---
+
+## Getting Started
+
+```bash
+npm install
+npm run dev
+```
+
+Then open [http://localhost:5173](http://localhost:5173) in your browser.
