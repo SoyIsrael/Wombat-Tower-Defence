@@ -16,12 +16,12 @@ Choose your map, set a math timer, pick a difficulty, select operations (additio
 ### Gameplay
 ![Gameplay](public/game.png)
 
-Place wombat towers along the path to intercept enemies making their way to the burrow. Multiple enemy types with different speeds and health keep each wave fresh.
+Place wombat towers along the path to intercept enemies making their way to the burrow. Multiple enemy types with different speeds, effects, and health keep each wave fresh.
 
 ### Math Challenge
 ![Math Challenge](public/math-problem.png)
 
-When you place a tower or earn gold, a timed fraction challenge pops up. Solve it correctly to earn gold. Faster answers = more reward.
+When you place finish a playing beating a round, a timed fraction challenge pops up. Solve it correctly to earn gold. Faster answers = more reward.
 
 ### Tower Upgrades
 ![Tower Upgrades](public/wombat-upgrades.png)
